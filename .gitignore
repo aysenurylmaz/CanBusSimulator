@@ -1,0 +1,21 @@
+# Build klasörleri (Github'a gereksiz büyük dosyaların yüklenmesini engeller)
+build/
+deploy/
+Installer/build_log.txt
+Installer/build_out.txt
+Installer/build-mingw/
+Installer/deploy_installer/
+Installer/payload/
+Installer/CanBusSimulatorInstaller_autogen/
+UpdateServer/html/update.exe
+UpdateServer/html/Update.zip
+
+# IDE Özel dosyaları
+.qtcreator/
+
+# VS Code dosyaları (Kendi lokal ayarlarınız)
+.vscode/
+
+# CanBus Simulator temp dosyaları
+*.v3
+inspect.txt
