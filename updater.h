@@ -16,7 +16,7 @@ public:
 
 private:
     QNetworkAccessManager *networkManager;
-    QString currentVersion = "3.2"; 
+    QString currentVersion = "3.4"; 
     void downloadAndApplyUpdate(const QString &fileUrl);
 };
 

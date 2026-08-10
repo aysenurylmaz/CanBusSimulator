@@ -20,6 +20,7 @@ add_executable(CanBusSimulator WIN32
     updater.h
     dbcparser.cpp
     dbcparser.h
+    app_icon.rc
 )
 target_link_libraries(CanBusSimulator PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network)
 
