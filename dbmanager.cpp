@@ -77,7 +77,10 @@ void DbManager::onNotification(const QString& name, QSqlDriver::NotificationSour
                     query.bindValue(":id", id);
                     if (query.exec() && query.next()) {
                         QString val = query.value(0).toString();
+                        qDebug() << "Fetched command_value for id" << id << ":" << val.left(100);
                         emit commandReceived(commandName, val);
+                    } else {
+                        qDebug() << "Failed to fetch command_value for id" << id << "Error:" << query.lastError().text();
                     }
                 });
                 return;

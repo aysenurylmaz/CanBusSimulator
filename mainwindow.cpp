@@ -435,8 +435,13 @@ void MainWindow::onCommandReceived(const QString& commandName, const QString& co
                 currentRouteIndex = 0;
                 currentLat = currentRoute[0].lat;
                 currentLng = currentRoute[0].lng;
-                
-                totalRemainingDistance = 0;
+                  
+                  DbManager::instance().logSignal("0x1F4", "Latitude", currentLat, "");
+                  DbManager::instance().logSignal("0x1F4", "Longitude", currentLng, "");
+                  lastLoggedValues["0x1F4_Latitude"] = currentLat;
+                  lastLoggedValues["0x1F4_Longitude"] = currentLng;
+                  
+                  totalRemainingDistance = 0;
                 for (int i = 0; i < currentRoute.size() - 1; ++i) {
                     double lat1 = qDegreesToRadians(currentRoute[i].lat);
                     double lng1 = qDegreesToRadians(currentRoute[i].lng);
@@ -496,3 +501,4 @@ void MainWindow::updateToggleButton(QPushButton* btn, bool state, const QString&
         btn->setStyleSheet(QString("background-color: %1; color: white; font-weight: bold;").arg(offColor));
     }
 }
+
