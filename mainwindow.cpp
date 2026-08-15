@@ -223,7 +223,8 @@ void MainWindow::generateCanFrame() {
         
         auto logIfChanged = [&](const QString& sigName, double val) {
             QString key = "0x1F4_" + sigName;
-            if (!lastLoggedValues.contains(key) || qAbs(lastLoggedValues[key] - val) > 0.01) {
+            double threshold = (sigName == "Latitude" || sigName == "Longitude") ? 0.000001 : 0.01;
+            if (!lastLoggedValues.contains(key) || qAbs(lastLoggedValues[key] - val) > threshold) {
                 DbManager::instance().logSignal("0x1F4", sigName, val, hexStr.trimmed());
                 lastLoggedValues[key] = val;
             }
@@ -302,7 +303,9 @@ void MainWindow::generateCanFrame() {
         QString messageIdHex = "0x" + QString::number(logItem.messageId, 16).toUpper();
         QString key = messageIdHex + "_" + logItem.name;
         
-        if (!lastLoggedValues.contains(key) || qAbs(lastLoggedValues[key] - logItem.physicalValue) > 0.01) {
+        double threshold = (logItem.name == "Latitude" || logItem.name == "Longitude") ? 0.000001 : 0.01;
+
+        if (!lastLoggedValues.contains(key) || qAbs(lastLoggedValues[key] - logItem.physicalValue) > threshold) {
             QString hexStr;
             QByteArray data = frames[logItem.messageId];
             for (int i = 0; i < data.size(); ++i) {
