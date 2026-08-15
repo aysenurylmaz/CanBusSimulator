@@ -38,6 +38,7 @@ public:
     
     QMap<uint32_t, DbcMessage> getMessages() const;
     bool isEmpty() const;
+    void exportToJson(const QString &jsonPath) const;
 
 private:
     QMap<uint32_t, DbcMessage> m_messages;

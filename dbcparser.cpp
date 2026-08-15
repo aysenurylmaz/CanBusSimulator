@@ -6,6 +6,9 @@
 #include <QTextStream>
 #include <QRegularExpression>
 #include <QDebug>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 
 DbcParser::DbcParser() {
 }
@@ -93,28 +96,81 @@ bool DbcParser::parseFile(const QString &filePath) {
     }
 
     file.close();
+    
+    // Senkronizasyon için dosyayı JSON formatında Web'in okuduğu Shared klasörüne aktarıyoruz
+    exportToJson("C:/Projeler/CanBusWebPlatform/Shared/parsed_dbc.json");
+    
     return true;
 }
 
-DbcSignal DbcParser::findSignalByKeywords(const QStringList &keywords, bool &found) const {
-    // Verilen anahtar kelimelerden (örn: "Speed", "Hiz") herhangi birini içeren 
-    // ilk sinyali arayıp bulur. Bu sayede program DBC'ye bağımlı kalmaz.
-    found = false;
-    // 1. Döngü (Dış): Hafızadaki tüm Mesajları (BO_) tek tek geziyoruz.
+void DbcParser::exportToJson(const QString &jsonPath) const {
+    QJsonArray jsonArray;
+    
     for (auto msgIt = m_messages.begin(); msgIt != m_messages.end(); ++msgIt) {
-        // 2. Döngü (İç): O anki mesajın içindeki tüm Sinyalleri (SG_) geziyoruz.
-        for (auto sigIt = msgIt.value().msgSignals.begin(); sigIt != msgIt.value().msgSignals.end(); ++sigIt) {
-            const QString &sigName = sigIt.value().name;
-            // 3. Döngü: Sinyal adının içinde, bizim aradığımız anahtar kelimelerden biri var mı?
-            for (const QString &keyword : keywords) {
-                if (sigName.contains(keyword, Qt::CaseInsensitive)) {
+        const DbcMessage &msg = msgIt.value();
+        QJsonObject msgObj;
+        
+        // JSON'da ID hex olarak tutulur (Örn: "0x1F4")
+        msgObj["id"] = QString("0x%1").arg(msg.id, 0, 16);
+        msgObj["name"] = msg.name;
+        msgObj["dlc"] = msg.dlc;
+        
+        QJsonArray signalsArray;
+        for (auto sigIt = msg.msgSignals.begin(); sigIt != msg.msgSignals.end(); ++sigIt) {
+            const DbcSignal &sig = sigIt.value();
+            QJsonObject sigObj;
+            sigObj["name"] = sig.name;
+            sigObj["startBit"] = sig.startBit;
+            sigObj["length"] = sig.length;
+            sigObj["factor"] = sig.factor;
+            sigObj["offset"] = sig.offset;
+            sigObj["min"] = sig.min;
+            sigObj["max"] = sig.max;
+            signalsArray.append(sigObj);
+        }
+        
+        msgObj["signals"] = signalsArray;
+        jsonArray.append(msgObj);
+    }
+    
+    QJsonDocument doc(jsonArray);
+    QFile file(jsonPath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(doc.toJson());
+        file.close();
+    } else {
+        qDebug() << "Failed to export JSON to:" << jsonPath;
+    }
+}
+
+DbcSignal DbcParser::findSignalByKeywords(const QStringList &keywords, bool &found) const {
+    found = false;
+    
+    // First pass: look for exact matches in the order of keywords
+    for (const QString &keyword : keywords) {
+        for (auto msgIt = m_messages.begin(); msgIt != m_messages.end(); ++msgIt) {
+            for (auto sigIt = msgIt.value().msgSignals.begin(); sigIt != msgIt.value().msgSignals.end(); ++sigIt) {
+                if (sigIt.value().name.compare(keyword, Qt::CaseInsensitive) == 0) {
                     found = true;
-                    return sigIt.value(); // Eşleşmeyi bulduğumuz an arama işlemini kesip sinyali gönderiyoruz.
+                    return sigIt.value();
                 }
             }
         }
     }
-    return DbcSignal(); // Tüm listeyi gezdik ama hiçbir eşleşme bulamadıysak boş (default) bir sinyal objesi döndürüyoruz.
+
+    // Second pass: look for partial matches in the order of keywords
+    for (const QString &keyword : keywords) {
+        for (auto msgIt = m_messages.begin(); msgIt != m_messages.end(); ++msgIt) {
+            for (auto sigIt = msgIt.value().msgSignals.begin(); sigIt != msgIt.value().msgSignals.end(); ++sigIt) {
+                if (sigIt.value().name.contains(keyword, Qt::CaseInsensitive)) {
+                    found = true;
+                    return sigIt.value();
+                }
+            }
+        }
+    }
+    
+    return DbcSignal();
 }
 // OOP (Nesne Yönelimli Programlama) - Encapsulation (Kapsülleme) gereği:
 // Dışarıdan, sınıfın gizli (private) üyesi olan 'm_messages' listesine 

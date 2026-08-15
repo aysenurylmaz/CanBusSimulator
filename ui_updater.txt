@@ -1,0 +1,17 @@
+﻿void MainWindow::updateUiState() {
+    if (isHandbrakeOn) {
+        handbrakeBtn->setText("ENGAGED (ON)");
+        handbrakeBtn->setStyleSheet("background-color: red; color: white; font-weight: bold;");
+    } else {
+        handbrakeBtn->setText("RELEASED (OFF)");
+        handbrakeBtn->setStyleSheet("background-color: green; color: white; font-weight: bold;");
+    }
+    
+    if (isHeadlightsOn) {
+        headlightsBtn->setText("ON");
+        headlightsBtn->setStyleSheet("background-color: yellow; color: black; font-weight: bold;");
+    } else {
+        headlightsBtn->setText("OFF");
+        headlightsBtn->setStyleSheet("background-color: gray; color: white; font-weight: bold;");
+    }
+}

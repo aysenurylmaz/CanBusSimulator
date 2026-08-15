@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC ON)
 # kendi bilgisayarınızdaki Qt yolunu yazabilirsiniz. (Github için yoruma alındı)
 # set(CMAKE_PREFIX_PATH "D:/Qt/6.11.1/mingw_64")
 # Qt6 ve Widgets modülünü buluyoruz
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Sql)
 add_executable(CanBusSimulator WIN32
     main.cpp
     mainwindow.cpp
@@ -21,7 +21,9 @@ add_executable(CanBusSimulator WIN32
     dbcparser.cpp
     dbcparser.h
     app_icon.rc
+    dbmanager.cpp
+    dbmanager.h
 )
-target_link_libraries(CanBusSimulator PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network)
+target_link_libraries(CanBusSimulator PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Sql)
 
 qt_standard_project_setup()
