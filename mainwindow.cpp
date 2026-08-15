@@ -11,7 +11,7 @@
 #include <QMessageBox>
 #include <QProcess>
 
-MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), isHeadlightsOn(false), isDoor1Open(false), isDoor2Open(false), isHvacOn(false), motorTemp(25.0), inverterTemp(25.0), currentSpeed(0.0), frameTickCounter(0) {
+MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), isHeadlightsOn(false), isDoor1Open(false), isDoor2Open(false), isHvacOn(false), motorTemp(25.0), inverterTemp(25.0), currentSpeed(0.0), frameTickCounter(0), currentRouteIndex(0), currentLat(0.0), currentLng(0.0), totalRemainingDistance(0.0), etaSeconds(0.0) {
     dbcParser = new DbcParser();
     networkManager = new QNetworkAccessManager(this);
     QFile file("C:/Projeler/CanBusWebPlatform/Shared/parsed_dbc.json");
@@ -233,6 +233,12 @@ void MainWindow::generateCanFrame() {
         logIfChanged("Battery", batterySlider->value());
         logIfChanged("Handbrake", isHandbrakeOn ? 1 : 0);
         logIfChanged("Headlights", isHeadlightsOn ? 1 : 0);
+        if (currentLat != 0.0 && currentLng != 0.0) {
+            logIfChanged("Latitude", currentLat);
+            logIfChanged("Longitude", currentLng);
+        }
+        logIfChanged("TotalDistance", totalRemainingDistance);
+        logIfChanged("ETA_Seconds", etaSeconds);
         
         DbManager::instance().commit();
         return;
@@ -251,6 +257,12 @@ void MainWindow::generateCanFrame() {
     DbcSignal hvacSig = dbcParser->findSignalByKeywords({"Driver_HVAC_Operation_Mode", "HVAC", "Klima", "A/C", "AC"}, hvacFound);
     DbcSignal motorTempSig = dbcParser->findSignalByKeywords({"Motor1_Temperature", "MotorTemp"}, motorTempFound);
     DbcSignal inverterTempSig = dbcParser->findSignalByKeywords({"Inverter1_Temperature", "InverterTemp"}, inverterTempFound);
+    
+    bool latFound, lngFound, distFound, etaFound;
+    DbcSignal latSig = dbcParser->findSignalByKeywords({"Latitude"}, latFound);
+    DbcSignal lngSig = dbcParser->findSignalByKeywords({"Longitude"}, lngFound);
+    DbcSignal distSig = dbcParser->findSignalByKeywords({"TotalDistance"}, distFound);
+    DbcSignal etaSig = dbcParser->findSignalByKeywords({"ETA_Seconds", "TotalDuration"}, etaFound);
 
     QMap<uint32_t, QByteArray> frames;
     struct LogInfo { uint32_t messageId; QString name; double physicalValue; };
@@ -277,6 +289,10 @@ void MainWindow::generateCanFrame() {
     if (hvacFound) prepareFrame(hvacSig, isHvacOn ? 1.0 : 0.0);
     if (motorTempFound) prepareFrame(motorTempSig, motorTemp);
     if (inverterTempFound) prepareFrame(inverterTempSig, inverterTemp);
+    if (latFound && currentLat != 0.0) prepareFrame(latSig, currentLat);
+    if (lngFound && currentLng != 0.0) prepareFrame(lngSig, currentLng);
+    if (distFound) prepareFrame(distSig, totalRemainingDistance);
+    if (etaFound) prepareFrame(etaSig, etaSeconds);
 
     for (auto it = frames.begin(); it != frames.end(); ++it) {
         logMessage(it.key(), it.value());
@@ -323,6 +339,60 @@ void MainWindow::physicsLoop() {
         if (inverterTemp > 20.0) inverterTemp -= 0.15;
     }
     
+    // GPS / Rota interpolasyonu
+    if (!currentRoute.isEmpty() && currentRouteIndex < currentRoute.size() - 1 && currentSpeed > 0) {
+        double speedMs = currentSpeed / 3.6; // km/h to m/s
+        double distanceToMove = speedMs * 0.1; // 100ms per tick
+        
+        while (distanceToMove > 0 && currentRouteIndex < currentRoute.size() - 1) {
+            double targetLat = currentRoute[currentRouteIndex + 1].lat;
+            double targetLng = currentRoute[currentRouteIndex + 1].lng;
+            
+            // Mesafe hesapla (haversine)
+            double lat1 = qDegreesToRadians(currentLat);
+            double lng1 = qDegreesToRadians(currentLng);
+            double lat2 = qDegreesToRadians(targetLat);
+            double lng2 = qDegreesToRadians(targetLng);
+            double dlon = lng2 - lng1;
+            double dlat = lat2 - lat1;
+            double a = qPow(qSin(dlat/2), 2) + qCos(lat1) * qCos(lat2) * qPow(qSin(dlon/2), 2);
+            double c = 2 * qAsin(qSqrt(a));
+            double distanceToTarget = 6371000 * c;
+            
+            if (distanceToMove >= distanceToTarget) {
+                // Noktaya ulaştı, sonrakine geç
+                currentLat = targetLat;
+                currentLng = targetLng;
+                distanceToMove -= distanceToTarget;
+                totalRemainingDistance -= distanceToTarget;
+                currentRouteIndex++;
+            } else {
+                // Hedefe doğru vektörel ilerle
+                double ratio = distanceToMove / distanceToTarget;
+                currentLat += (targetLat - currentLat) * ratio;
+                currentLng += (targetLng - currentLng) * ratio;
+                totalRemainingDistance -= distanceToMove;
+                distanceToMove = 0;
+            }
+        }
+        
+        if (totalRemainingDistance < 0) totalRemainingDistance = 0;
+        
+        // ETA hesapla
+        if (currentSpeed > 0) {
+            etaSeconds = totalRemainingDistance / (currentSpeed / 3.6);
+        } else {
+            etaSeconds = 0;
+        }
+        
+        // Sürüş bittiyse
+        if (currentRouteIndex >= currentRoute.size() - 1) {
+            speedSlider->setValue(0);
+            currentSpeed = 0;
+            currentRoute.clear();
+        }
+    }
+    
     generateCanFrame();
 }
 
@@ -348,6 +418,67 @@ void MainWindow::onCommandReceived(const QString& commandName, const QString& co
         QString sharedDir = "C:\\Projeler\\CanBusWebPlatform\\Shared\\";
         QString fullPath = sharedDir + commandValue;
         dbcParser->parseFile(fullPath);
+    }
+    else if (commandName == "Set_Route_Data") {
+        QJsonDocument doc = QJsonDocument::fromJson(commandValue.toUtf8());
+        if (doc.isArray()) {
+            QJsonArray arr = doc.array();
+            currentRoute.clear();
+            for (int i = 0; i < arr.size(); ++i) {
+                QJsonObject obj = arr[i].toObject();
+                currentRoute.append({obj["lat"].toDouble(), obj["lng"].toDouble()});
+            }
+            if (!currentRoute.isEmpty()) {
+                currentRouteIndex = 0;
+                currentLat = currentRoute[0].lat;
+                currentLng = currentRoute[0].lng;
+                
+                totalRemainingDistance = 0;
+                for (int i = 0; i < currentRoute.size() - 1; ++i) {
+                    double lat1 = qDegreesToRadians(currentRoute[i].lat);
+                    double lng1 = qDegreesToRadians(currentRoute[i].lng);
+                    double lat2 = qDegreesToRadians(currentRoute[i+1].lat);
+                    double lng2 = qDegreesToRadians(currentRoute[i+1].lng);
+                    double dlon = lng2 - lng1;
+                    double dlat = lat2 - lat1;
+                    double a = qPow(qSin(dlat/2), 2) + qCos(lat1) * qCos(lat2) * qPow(qSin(dlon/2), 2);
+                    double c = 2 * qAsin(qSqrt(a));
+                    totalRemainingDistance += 6371000 * c;
+                }
+            }
+        }
+    }
+    else if (commandName == "Set_Route") {
+        QStringList parts = commandValue.split(';');
+        if (parts.size() == 2) {
+            QStringList start = parts[0].split(',');
+            QStringList end = parts[1].split(',');
+            if (start.size() == 2 && end.size() == 2) {
+                currentRoute.clear();
+                currentRoute.append({start[0].toDouble(), start[1].toDouble()});
+                currentRoute.append({end[0].toDouble(), end[1].toDouble()});
+                currentRouteIndex = 0;
+                currentLat = currentRoute[0].lat;
+                currentLng = currentRoute[0].lng;
+                
+                double lat1 = qDegreesToRadians(currentRoute[0].lat);
+                double lng1 = qDegreesToRadians(currentRoute[0].lng);
+                double lat2 = qDegreesToRadians(currentRoute[1].lat);
+                double lng2 = qDegreesToRadians(currentRoute[1].lng);
+                double dlon = lng2 - lng1;
+                double dlat = lat2 - lat1;
+                double a = qPow(qSin(dlat/2), 2) + qCos(lat1) * qCos(lat2) * qPow(qSin(dlon/2), 2);
+                double c = 2 * qAsin(qSqrt(a));
+                totalRemainingDistance = 6371000 * c;
+            }
+        }
+    }
+    else if (commandName == "Stop_Driving") {
+        currentRoute.clear();
+        speedSlider->setValue(0);
+        currentSpeed = 0;
+        totalRemainingDistance = 0;
+        etaSeconds = 0;
     }
 }
 

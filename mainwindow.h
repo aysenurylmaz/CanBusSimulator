@@ -17,6 +17,10 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QList>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QtMath>
 
 class MainWindow : public QWidget {
     Q_OBJECT
@@ -57,6 +61,8 @@ private:
     int currentRouteIndex;
     double currentLat;
     double currentLng;
+    double totalRemainingDistance;
+    double etaSeconds;
 
     // State Variables
     bool isHandbrakeOn;
