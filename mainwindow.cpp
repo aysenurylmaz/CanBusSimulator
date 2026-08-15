@@ -290,10 +290,50 @@ void MainWindow::generateCanFrame() {
     if (hvacFound) prepareFrame(hvacSig, isHvacOn ? 1.0 : 0.0);
     if (motorTempFound) prepareFrame(motorTempSig, motorTemp);
     if (inverterTempFound) prepareFrame(inverterTempSig, inverterTemp);
-    if (latFound && currentLat != 0.0) prepareFrame(latSig, currentLat);
-    if (lngFound && currentLng != 0.0) prepareFrame(lngSig, currentLng);
-    if (distFound) prepareFrame(distSig, totalRemainingDistance);
-    if (etaFound) prepareFrame(etaSig, etaSeconds);
+    
+    if (latFound && currentLat != 0.0) {
+        prepareFrame(latSig, currentLat);
+    } else if (currentLat != 0.0) {
+        // Fallback for Web UI if DBC lacks GPS signals
+        double threshold = 0.000001;
+        if (!lastLoggedValues.contains("0x1F4_Latitude") || qAbs(lastLoggedValues["0x1F4_Latitude"] - currentLat) > threshold) {
+            DbManager::instance().logSignal("0x1F4", "Latitude", currentLat, "00 00 00 00 00 00 00 00");
+            lastLoggedValues["0x1F4_Latitude"] = currentLat;
+        }
+    }
+    
+    if (lngFound && currentLng != 0.0) {
+        prepareFrame(lngSig, currentLng);
+    } else if (currentLng != 0.0) {
+        // Fallback for Web UI if DBC lacks GPS signals
+        double threshold = 0.000001;
+        if (!lastLoggedValues.contains("0x1F4_Longitude") || qAbs(lastLoggedValues["0x1F4_Longitude"] - currentLng) > threshold) {
+            DbManager::instance().logSignal("0x1F4", "Longitude", currentLng, "00 00 00 00 00 00 00 00");
+            lastLoggedValues["0x1F4_Longitude"] = currentLng;
+        }
+    }
+    
+    if (distFound) {
+        prepareFrame(distSig, totalRemainingDistance);
+    } else {
+        // Fallback for Web UI
+        double threshold = 1.0;
+        if (!lastLoggedValues.contains("0x1F5_TotalDistance") || qAbs(lastLoggedValues["0x1F5_TotalDistance"] - totalRemainingDistance) > threshold) {
+            DbManager::instance().logSignal("0x1F5", "TotalDistance", totalRemainingDistance, "00 00 00 00 00 00 00 00");
+            lastLoggedValues["0x1F5_TotalDistance"] = totalRemainingDistance;
+        }
+    }
+    
+    if (etaFound) {
+        prepareFrame(etaSig, etaSeconds);
+    } else {
+        // Fallback for Web UI
+        double threshold = 1.0;
+        if (!lastLoggedValues.contains("0x1F5_ETA_Seconds") || qAbs(lastLoggedValues["0x1F5_ETA_Seconds"] - etaSeconds) > threshold) {
+            DbManager::instance().logSignal("0x1F5", "ETA_Seconds", etaSeconds, "00 00 00 00 00 00 00 00");
+            lastLoggedValues["0x1F5_ETA_Seconds"] = etaSeconds;
+        }
+    }
 
     for (auto it = frames.begin(); it != frames.end(); ++it) {
         logMessage(it.key(), it.value());
