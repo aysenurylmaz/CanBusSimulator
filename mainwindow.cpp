@@ -14,7 +14,7 @@
 #include <QProcess>
 
 
-    // Arayï¿½zï¿½ (UI) kuran, Timer'larï¿½ baï¿½latan ve temel deï¿½iï¿½kenleri sï¿½fï¿½rlayan kurucu fonksiyon (Constructor).
+    // Arayuzu (UI) kuran, Timer'lari baslatan ve temel degiskenleri sifirlayan kurucu fonksiyon (Constructor).
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), isHeadlightsOn(false), isDoor1Open(false), isDoor2Open(false), isHvacOn(false), motorTemp(25.0), inverterTemp(25.0), currentSpeed(0.0), frameTickCounter(0), currentRouteIndex(0), currentLat(0.0), currentLng(0.0), totalRemainingDistance(0.0), etaSeconds(0.0) {
     dbcParser = new DbcParser();
     networkManager = new QNetworkAccessManager(this);
@@ -48,6 +48,7 @@ MainWindow::~MainWindow() {
     delete dbcParser;
 }
 
+// Kullanici arayuzundeki buton, slider, ve gostergeleri olusturan ve ana pencereye yerlestiren ana tasarim (UI) fonksiyonu.
 void MainWindow::setupUi() {
     setWindowTitle("CAN Bus Simulator - v3.5");
     resize(800, 600);
@@ -133,7 +134,7 @@ void MainWindow::loadDbcFile() {
             QMessageBox::information(this, "Success", "DBC file loaded successfully!");
             generateCanFrame();
             
-            // Trigger web UI reload via SignalR
+            // Yeni bir DBC yuklendiginde, Web UI (Frontend) tarafindaki SignalR dinleyicilerini tetikleyerek arayuzun DBC'ye gore yeniden sekillenmesini saglar.
             QNetworkRequest request(QUrl("http://127.0.0.1:5085/api/dbc/reload"));
             request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
             QNetworkReply *reply = networkManager->post(request, QByteArray("{}"));
@@ -146,6 +147,7 @@ void MainWindow::loadDbcFile() {
     }
 }
 
+// Hesaplanan fiziksel degerleri (km/h, derece vb.) DBC dosyasindaki Byte/Bit tanimlarina gore (Little Endian / Big Endian, Start Bit, Length) isleyerek ham (Raw) CAN frame bytelarina paketler.
 void MainWindow::packSignal(QByteArray &frame, const DbcSignal &sig, uint64_t rawVal) {
     uint64_t mask = (1ULL << sig.length) - 1;
     rawVal = (rawVal & mask);
@@ -183,7 +185,7 @@ void MainWindow::packSignal(QByteArray &frame, const DbcSignal &sig, uint64_t ra
 }
 
 
-    // Fizik motorunda hesaplanan araï¿½ verilerini (hï¿½z, konum) DBC dosyasï¿½na gï¿½re CAN frame'lerine ï¿½evirip veritabanï¿½na basar.
+    // Fizik motorunda hesaplanan arac verilerini (hiz, konum, sicaklik) mevcut DBC dosyasina gore gercek CAN mesajlarina (Frame) cevirip veritabanina (PostgreSQL) yazar.
 void MainWindow::generateCanFrame() {
     canMonitor->clear();
     
@@ -211,6 +213,7 @@ void MainWindow::generateCanFrame() {
         canMonitor->append(logLine);
     };
 
+    // Eger hicbir DBC dosyasi yuklenmediyse (varsayilan baslangic), simulasyonun cökmemesi icin tamamen uydurma (Dummy) bir mesaj (0x1F4 ID) ile sistem verilerini veritabanina yollar.
     if (dbcParser->isEmpty()) {
         QByteArray data(8, 0);
         data[0] = isHandbrakeOn ? 0x01 : 0x00;
@@ -254,7 +257,7 @@ void MainWindow::generateCanFrame() {
     bool speedFound, batteryFound, handbrakeFound, headlightsFound;
     bool door1Found, door2Found, hvacFound, motorTempFound, inverterTempFound;
 
-    // Use single signal to avoid battery flooding
+    // Birden fazla benzer sinyal bulunma ihtimaline karsi (Battery flooding) sadece ilk bulunan sinyali dikkate al.
     DbcSignal speedSig = dbcParser->findSignalByKeywords({"CCVS_WheelBasedSpeed", "Vehicle_Speed", "CCVS", "Speed", "Spd"}, speedFound);
     DbcSignal batterySig = dbcParser->findSignalByKeywords({"SOC", "GenericStateofCharge", "Battery_Level", "Battery", "Bat", "Charge"}, batteryFound);
     DbcSignal handbrakeSig = dbcParser->findSignalByKeywords({"CCVS_ParkingBrakeStatus", "FMS1_ParkingBrake", "Hand_Brake", "Brake", "Hand", "Park"}, handbrakeFound);
@@ -300,7 +303,7 @@ void MainWindow::generateCanFrame() {
     if (latFound && currentLat != 0.0) {
         prepareFrame(latSig, currentLat);
     } else if (currentLat != 0.0) {
-        // Fallback for Web UI if DBC lacks GPS signals
+        // Eger yuklenen DBC dosyasinda GPS Enlem (Latitude) sinyalleri tanimsizsa, Web Arayuzundeki haritanin bozulmamasi adina 0x1F4 ID'si uzerinden arka planda gizli bir yedege yazar.
         double threshold = 0.000001;
         if (!lastLoggedValues.contains("0x1F4_Latitude") || qAbs(lastLoggedValues["0x1F4_Latitude"] - currentLat) > threshold) {
             DbManager::instance().logSignal("0x1F4", "Latitude", currentLat, "00 00 00 00 00 00 00 00");
@@ -311,7 +314,7 @@ void MainWindow::generateCanFrame() {
     if (lngFound && currentLng != 0.0) {
         prepareFrame(lngSig, currentLng);
     } else if (currentLng != 0.0) {
-        // Fallback for Web UI if DBC lacks GPS signals
+        // Eger yuklenen DBC dosyasinda GPS Boylam (Longitude) sinyalleri tanimsizsa, Web Arayuzundeki haritanin bozulmamasi adina 0x1F4 ID'si uzerinden arka planda gizli bir yedege yazar.
         double threshold = 0.000001;
         if (!lastLoggedValues.contains("0x1F4_Longitude") || qAbs(lastLoggedValues["0x1F4_Longitude"] - currentLng) > threshold) {
             DbManager::instance().logSignal("0x1F4", "Longitude", currentLng, "00 00 00 00 00 00 00 00");
@@ -322,7 +325,7 @@ void MainWindow::generateCanFrame() {
     if (distFound) {
         prepareFrame(distSig, totalRemainingDistance);
     } else {
-        // Fallback for Web UI
+        // Yuklenen ozel DBC'de kalan kilometre hesaplanmiyorsa, Web UI (Trip Status Paneli) icin yapay bir 0x1F5 mesaji uret.
         double threshold = 1.0;
         if (!lastLoggedValues.contains("0x1F5_TotalDistance") || qAbs(lastLoggedValues["0x1F5_TotalDistance"] - totalRemainingDistance) > threshold) {
             DbManager::instance().logSignal("0x1F5", "TotalDistance", totalRemainingDistance, "00 00 00 00 00 00 00 00");
@@ -333,7 +336,7 @@ void MainWindow::generateCanFrame() {
     if (etaFound) {
         prepareFrame(etaSig, etaSeconds);
     } else {
-        // Fallback for Web UI
+        // Yuklenen ozel DBC'de tahmini varis suresi hesaplanmiyorsa, Web UI (Trip Status Paneli) icin yapay bir 0x1F5 mesaji uret.
         double threshold = 1.0;
         if (!lastLoggedValues.contains("0x1F5_ETA_Seconds") || qAbs(lastLoggedValues["0x1F5_ETA_Seconds"] - etaSeconds) > threshold) {
             DbManager::instance().logSignal("0x1F5", "ETA_Seconds", etaSeconds, "00 00 00 00 00 00 00 00");
@@ -365,7 +368,7 @@ void MainWindow::generateCanFrame() {
 }
 
 
-    // Fizik motorunun ana dï¿½ngï¿½sï¿½: Hï¿½z, mesafe, batarya tï¿½ketimi ve motor sï¿½caklï¿½k deï¿½iï¿½imlerini 50ms'de bir hesaplar.
+    // Fizik motorunun ana dongusu: Hiz, mesafe, batarya tuketimi ve motor sicaklik degisimlerini 100ms'de bir (0.1 sn) hesaplar ve araci haritada ilerletir.
 void MainWindow::physicsLoop() {
     currentSpeed = speedSlider->value();
     if (isHandbrakeOn && currentSpeed > 0) {
@@ -447,6 +450,7 @@ void MainWindow::physicsLoop() {
     generateCanFrame();
 }
 
+// PostgreSQL veritabanindan 'device_commands' uzerinden asenkron (LISTEN/NOTIFY) olarak gelen kontrol komutlarini (Farlari yak, Rotayi degistir) alir ve simulasyondaki ilgili state (durum) degiskenlerini ezer.
 void MainWindow::onCommandReceived(const QString& commandName, const QString& commandValue) {
     auto parseBool = [](const QString& val, bool current) {
         return (val == "1" || val.toLower() == "true") ? true : (val == "0" || val.toLower() == "false" ? false : !current);
