@@ -12,7 +12,8 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProcess>
-
+#include "teltonikatcpclient.h"
+#include "codec8builder.h"
 
     // Arayuzu (UI) kuran, Timer'lari baslatan ve temel degiskenleri sifirlayan kurucu fonksiyon (Constructor).
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), isHeadlightsOn(false), isDoor1Open(false), isDoor2Open(false), isHvacOn(false), motorTemp(25.0), inverterTemp(25.0), currentSpeed(0.0), frameTickCounter(0), currentRouteIndex(0), currentLat(0.0), currentLng(0.0), totalRemainingDistance(0.0), etaSeconds(0.0) {
@@ -30,6 +31,10 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), 
     connect(reply, &QNetworkReply::finished, [reply]() {
         reply->deleteLater();
     });
+
+    teltonikaClient = new TeltonikaTcpClient(this);
+    // Gercek bir sunucu olmadigi icin simdilik kendi localimize test amacli baglaniyoruz.
+    teltonikaClient->connectToServer("127.0.0.1", 12345);
 
     connect(&DbManager::instance(), &DbManager::commandReceived, this, &MainWindow::onCommandReceived);
     setupUi();
@@ -250,6 +255,14 @@ void MainWindow::generateCanFrame() {
         logIfChanged("TotalDistance", totalRemainingDistance);
         logIfChanged("ETA_Seconds", etaSeconds);
         
+        // ----------------------------------------------------
+        // TELTONIKA CODEC 8 TEST GONDERIMI (DUMMY PAYLOAD)
+        // ----------------------------------------------------
+        Codec8Builder builder;
+        // Data degiskenindeki ilk 8 bytei Codec 8 formatiyla paketler
+        QByteArray codec8Packet = builder.buildPacket(data, 145);
+        teltonikaClient->sendData(codec8Packet);
+        
         DbManager::instance().commit();
         return;
     }
@@ -362,6 +375,13 @@ void MainWindow::generateCanFrame() {
             }
             DbManager::instance().logSignal(messageIdHex, logItem.name, logItem.physicalValue, hexStr.trimmed());
             lastLoggedValues[key] = logItem.physicalValue;
+            
+            // Sadece hizi veya ornek bir sinyali Teltonika uzerinden yollamak istersek:
+            if (logItem.name == "Speed" || logItem.name == "Vehicle_Speed") {
+                Codec8Builder builder;
+                QByteArray codec8Packet = builder.buildPacket(frames[logItem.messageId], 145);
+                teltonikaClient->sendData(codec8Packet);
+            }
         }
     }
     DbManager::instance().commit();

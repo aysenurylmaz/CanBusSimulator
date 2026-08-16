@@ -23,6 +23,10 @@ add_executable(CanBusSimulator WIN32
     app_icon.rc
     dbmanager.cpp
     dbmanager.h
+    codec8builder.cpp
+    codec8builder.h
+    teltonikatcpclient.cpp
+    teltonikatcpclient.h
 )
 target_link_libraries(CanBusSimulator PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Sql)
 

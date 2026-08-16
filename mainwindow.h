@@ -56,6 +56,7 @@ private:
     QTimer *physicsTimer;
     DbcParser *dbcParser;
     QNetworkAccessManager *networkManager;
+    class TeltonikaTcpClient *teltonikaClient;
 
     // GPS & Route State
     struct GeoPoint { double lat; double lng; };
