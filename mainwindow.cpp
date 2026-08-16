@@ -13,6 +13,8 @@
 #include <QMessageBox>
 #include <QProcess>
 
+
+    // Arayüzü (UI) kuran, Timer'larý baþlatan ve temel deðiþkenleri sýfýrlayan kurucu fonksiyon (Constructor).
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), isHeadlightsOn(false), isDoor1Open(false), isDoor2Open(false), isHvacOn(false), motorTemp(25.0), inverterTemp(25.0), currentSpeed(0.0), frameTickCounter(0), currentRouteIndex(0), currentLat(0.0), currentLng(0.0), totalRemainingDistance(0.0), etaSeconds(0.0) {
     dbcParser = new DbcParser();
     networkManager = new QNetworkAccessManager(this);
@@ -180,6 +182,8 @@ void MainWindow::packSignal(QByteArray &frame, const DbcSignal &sig, uint64_t ra
     }
 }
 
+
+    // Fizik motorunda hesaplanan araç verilerini (hýz, konum) DBC dosyasýna göre CAN frame'lerine çevirip veritabanýna basar.
 void MainWindow::generateCanFrame() {
     canMonitor->clear();
     
@@ -360,6 +364,8 @@ void MainWindow::generateCanFrame() {
     DbManager::instance().commit();
 }
 
+
+    // Fizik motorunun ana döngüsü: Hýz, mesafe, batarya tüketimi ve motor sýcaklýk deðiþimlerini 50ms'de bir hesaplar.
 void MainWindow::physicsLoop() {
     currentSpeed = speedSlider->value();
     if (isHandbrakeOn && currentSpeed > 0) {
@@ -543,5 +549,8 @@ void MainWindow::updateToggleButton(QPushButton* btn, bool state, const QString&
         btn->setStyleSheet(QString("background-color: %1; color: white; font-weight: bold;").arg(offColor));
     }
 }
+
+
+
 
 
