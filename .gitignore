@@ -19,3 +19,6 @@ UpdateServer/html/Update.zip
 # CanBus Simulator temp dosyaları
 *.v3
 inspect.txt
+build_test/
+test_delete.cpp
+ui_updater.txt
