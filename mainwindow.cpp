@@ -255,14 +255,6 @@ void MainWindow::generateCanFrame() {
         logIfChanged("TotalDistance", totalRemainingDistance);
         logIfChanged("ETA_Seconds", etaSeconds);
         
-        // ----------------------------------------------------
-        // TELTONIKA CODEC 8 TEST GONDERIMI (GERCEK KONUM ILE)
-        // ----------------------------------------------------
-        Codec8Builder builder;
-        // Data degiskenindeki ilk 8 bytei Codec 8 formatiyla paketler ve haritadaki konumunu ekler
-        QByteArray codec8Packet = builder.buildPacket(data, 145, currentLat, currentLng, currentSpeed);
-        teltonikaClient->sendData(codec8Packet);
-        
         DbManager::instance().commit();
         return;
     }
@@ -376,14 +368,29 @@ void MainWindow::generateCanFrame() {
             DbManager::instance().logSignal(messageIdHex, logItem.name, logItem.physicalValue, hexStr.trimmed());
             lastLoggedValues[key] = logItem.physicalValue;
             
-            // Sadece hizi veya ornek bir sinyali Teltonika uzerinden yollamak istersek:
-            if (logItem.name == "Speed" || logItem.name == "Vehicle_Speed") {
-                Codec8Builder builder;
-                QByteArray codec8Packet = builder.buildPacket(frames[logItem.messageId], 145, currentLat, currentLng, currentSpeed);
-                teltonikaClient->sendData(codec8Packet);
-            }
         }
     }
+
+    // ----------------------------------------------------
+    // TELTONIKA FMS GATEWAY GONDERIMI (SANIYEDE 1 KERE)
+    // ----------------------------------------------------
+    if (frameTickCounter == 0) {
+        // DBC yuklu olsun veya olmasin, sunucuya (backend'e) her zaman ayni standart (8-byte) veriyi yollariz.
+        // Bu sayede backend tarafi dinamik DBC formatlariyla ugrasmak zorunda kalmaz, sabit formati cozer.
+        QByteArray fmsData(8, 0);
+        fmsData[0] = isHandbrakeOn ? 0x01 : 0x00;
+        fmsData[1] = static_cast<unsigned char>(batterySlider->value());
+        uint16_t speed = static_cast<uint16_t>(speedSpinBox->value());
+        fmsData[2] = speed & 0xFF;
+        fmsData[3] = (speed >> 8) & 0xFF;
+        fmsData[4] = isHeadlightsOn ? 0x01 : 0x00;
+        // Kalan 3 byte (5, 6, 7) su an icin 0x00 (Ileride eklenebilir).
+
+        Codec8Builder builder;
+        QByteArray codec8Packet = builder.buildPacket(fmsData, 145, currentLat, currentLng, currentSpeed);
+        teltonikaClient->sendData(codec8Packet);
+    }
+
     DbManager::instance().commit();
 }
 
