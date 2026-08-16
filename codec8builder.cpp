@@ -4,7 +4,7 @@ Codec8Builder::Codec8Builder()
 {
 }
 
-QByteArray Codec8Builder::buildPacket(const QByteArray& payload, quint16 propertyId)
+QByteArray Codec8Builder::buildPacket(const QByteArray& payload, quint16 propertyId, double lat, double lng, double speed)
 {
     // Teltonika Codec 8 paket mimarisi 4 ana asmadan olusur:
     // 1. Preamble (4 byte)          : Paketin baslangicini belirten sifirlar (0x00000000).
@@ -43,13 +43,13 @@ QByteArray Codec8Builder::buildPacket(const QByteArray& payload, quint16 propert
     // GPS Elementleri (Toplam 15 byte zorunlu)
     // Gonderilen her verinin yaninda cihaz o anki GPS konumunu da yollar.
     // Longitude ve Latitude degerleri gercek derece degerlerinin 10.000.000 (10^7) ile carpilmis halidir.
-    // Biz gercek bir cihaz olmadigimiz icin su an Dummy (Sahte) veri ekliyoruz.
-    appendUInt32(avlData, 289784000); // Longitude ornegi (28.9784)
-    appendUInt32(avlData, 410082000); // Latitude ornegi  (41.0082)
-    appendUInt16(avlData, 100);       // Altitude (Deniz seviyesinden yukseklik - 100 metre)
+    // Teltonika cihazi koordinatlari integer (tamsayi) formatinda kabul eder.
+    appendUInt32(avlData, static_cast<quint32>(lng * 10000000.0)); // Guncel Longitude (x 10^7)
+    appendUInt32(avlData, static_cast<quint32>(lat * 10000000.0)); // Guncel Latitude  (x 10^7)
+    appendUInt16(avlData, 100);       // Altitude (Deniz seviyesinden yukseklik - varsayilan 100 metre)
     appendUInt16(avlData, 0);         // Angle (Yon acisi - 0 derece)
-    appendUInt8(avlData, 15);         // Satellites (Kac uyduya bagli - 15 uydu)
-    appendUInt16(avlData, 0);         // Speed (Aracin hizi - 0 km/h)
+    appendUInt8(avlData, 15);         // Satellites (Kac uyduya bagli - 15 uydu varsayilan)
+    appendUInt16(avlData, static_cast<quint16>(speed)); // Speed (Aracin hizi - km/h)
 
     // IO Elements Blogu (Burasi Manual CAN verilerimizin girdigi yerdir)
     // IO demek (Input/Output), sensor veya CAN verileri demek.

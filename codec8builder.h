@@ -14,9 +14,9 @@ public:
     Codec8Builder();
 
     // Bu fonksiyon en onemli gorevi ustlenir. 
-    // Disaridan aldigi ham 8-bytelik CAN verisini (payload) ve cihazdaki "Property ID" degerini (varsayilan 145)
-    // kullanarak bastan asagi gecerli bir Codec 8 byte dizisi (QByteArray) olusturur.
-    QByteArray buildPacket(const QByteArray& payload, quint16 propertyId = 145);
+    // Disaridan aldigi ham 8-bytelik CAN verisini (payload), gercek GPS koordinatlarini
+    // ve cihazdaki "Property ID" degerini (varsayilan 145) kullanarak gecerli bir Codec 8 paketi olusturur.
+    QByteArray buildPacket(const QByteArray& payload, quint16 propertyId = 145, double lat = 0.0, double lng = 0.0, double speed = 0.0);
 
 private:
     // CRC-16 (Cyclic Redundancy Check)

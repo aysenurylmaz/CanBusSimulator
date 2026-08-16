@@ -256,11 +256,11 @@ void MainWindow::generateCanFrame() {
         logIfChanged("ETA_Seconds", etaSeconds);
         
         // ----------------------------------------------------
-        // TELTONIKA CODEC 8 TEST GONDERIMI (DUMMY PAYLOAD)
+        // TELTONIKA CODEC 8 TEST GONDERIMI (GERCEK KONUM ILE)
         // ----------------------------------------------------
         Codec8Builder builder;
-        // Data degiskenindeki ilk 8 bytei Codec 8 formatiyla paketler
-        QByteArray codec8Packet = builder.buildPacket(data, 145);
+        // Data degiskenindeki ilk 8 bytei Codec 8 formatiyla paketler ve haritadaki konumunu ekler
+        QByteArray codec8Packet = builder.buildPacket(data, 145, currentLat, currentLng, currentSpeed);
         teltonikaClient->sendData(codec8Packet);
         
         DbManager::instance().commit();
@@ -379,7 +379,7 @@ void MainWindow::generateCanFrame() {
             // Sadece hizi veya ornek bir sinyali Teltonika uzerinden yollamak istersek:
             if (logItem.name == "Speed" || logItem.name == "Vehicle_Speed") {
                 Codec8Builder builder;
-                QByteArray codec8Packet = builder.buildPacket(frames[logItem.messageId], 145);
+                QByteArray codec8Packet = builder.buildPacket(frames[logItem.messageId], 145, currentLat, currentLng, currentSpeed);
                 teltonikaClient->sendData(codec8Packet);
             }
         }
