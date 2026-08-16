@@ -14,13 +14,13 @@ struct DbcSignal {
     QString name;
     int startBit;
     int length;
-    bool isLittleEndian; // 1 = Little Endian (Intel), 0 = Big Endian (Motorola)
+    bool isLittleEndian; // 1 = Little Endian (ntel), 0 = Big Endian (Motorola)
     bool isUnsigned;
     double factor;
     double offset;
     double min;
     double max;
-    uint32_t messageId; // Which message this signal belongs to
+    uint32_t messaged; // Which message this signal belongs to
 };
 
 struct DbcMessage {

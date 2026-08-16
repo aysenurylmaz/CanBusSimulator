@@ -1,9 +1,9 @@
-#ifndef INSTALLERUTILS_H
-#define INSTALLERUTILS_H
+#ifndef NSTALLERUTLS_H
+#define NSTALLERUTLS_H
 
 #include <QString>
 
-namespace InstallerUtils {
+namespace nstallerUtils {
     // Copies contents of a QRC directory to a local file system directory
     bool copyResources(const QString &sourceDir, const QString &destDir, QString &errorMessage);
 
@@ -11,4 +11,4 @@ namespace InstallerUtils {
     bool createDesktopShortcut(const QString &targetFile, const QString &shortcutName, const QString &workingDirectory, QString &errorMessage);
 }
 
-#endif // INSTALLERUTILS_H
+#endif // NSTALLERUTLS_H

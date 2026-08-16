@@ -1,29 +1,29 @@
-#ifndef INSTALLERWIZARD_H
-#define INSTALLERWIZARD_H
+#ifndef NSTALLERWZARD_H
+#define NSTALLERWZARD_H
 
 #include <QWizard>
 
-class IntroPage;
+class ntroPage;
 class DirectoryPage;
 class OptionsPage;
 class ProgressPage;
 class ConclusionPage;
 
-class InstallerWizard : public QWizard
+class nstallerWizard : public QWizard
 {
     Q_OBJECT
 
 public:
-    enum { Page_Intro, Page_Directory, Page_Options, Page_Progress, Page_Conclusion };
+    enum { Page_ntro, Page_Directory, Page_Options, Page_Progress, Page_Conclusion };
 
-    InstallerWizard(QWidget *parent = nullptr);
+    nstallerWizard(QWidget *parent = nullptr);
 
 private:
-    IntroPage *introPage;
+    ntroPage *introPage;
     DirectoryPage *directoryPage;
     OptionsPage *optionsPage;
     ProgressPage *progressPage;
     ConclusionPage *conclusionPage;
 };
 
-#endif // INSTALLERWIZARD_H
+#endif // NSTALLERWZARD_H
