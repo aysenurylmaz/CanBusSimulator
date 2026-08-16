@@ -22,3 +22,4 @@ inspect.txt
 build_test/
 test_delete.cpp
 ui_updater.txt
+config.ini
