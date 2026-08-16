@@ -1,19 +1,19 @@
-// Uygulaman�n ba�lang�� noktas�. Qt GUI (Aray�z) motorunu ba�lat�r ve MainWindow (Ana Pencere) nesnesini ekrana �izer.
+// Uygulaman�n ba�lang�� noktas�. Qt GUI (Aray�z) motorunu ba�lat�r ve MainWindow (Ana Pencere) nesnesini ekrana �izer.
 
-// Projenin başlangıç (giriş) dosyasıdır.
-// Uygulama ilk buradan çalışmaya başlar ve MainWindow (Ana Pencere) arayüzünü ekrana çizer.
+// Projenin baslangic (giris) dosyasidir.
+// Uygulama ilk buradan calismaya baslar ve MainWindow (Ana Pencere) arayuzunu ekrana cizer.
 #include <QApplication>
 #include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
-    // Qt uygulamasını başlatır
+    // Qt uygulamasini baslatir
     QApplication a(argc, argv);
     
-    // Ana pencereyi oluştur ve ekranda göster
+    // Ana pencereyi olustur ve ekranda goster
     MainWindow w;
     w.show();
     
-    // Uygulamayı açık tutan ana döngüyü başlatır (Kapatılana kadar çalışır)
+    // Uygulamayi acik tutan ana donguyu baslatir (Kapatilana kadar calisir)
     return a.exec();
 }

@@ -1,4 +1,4 @@
-// Ana simülasyon döngüsünün (Fizik motoru, hýz/koordinat hesaplamalarý) ve kullanýcý arayüzü etkileþimlerinin gerçekleþtiði en temel dosyadýr.
+// Ana simï¿½lasyon dï¿½ngï¿½sï¿½nï¿½n (Fizik motoru, hï¿½z/koordinat hesaplamalarï¿½) ve kullanï¿½cï¿½ arayï¿½zï¿½ etkileï¿½imlerinin gerï¿½ekleï¿½tiï¿½i en temel dosyadï¿½r.
 
 #include "mainwindow.h"
 #include "dbmanager.h"
@@ -14,7 +14,7 @@
 #include <QProcess>
 
 
-    // Arayüzü (UI) kuran, Timer'larý baþlatan ve temel deðiþkenleri sýfýrlayan kurucu fonksiyon (Constructor).
+    // Arayï¿½zï¿½ (UI) kuran, Timer'larï¿½ baï¿½latan ve temel deï¿½iï¿½kenleri sï¿½fï¿½rlayan kurucu fonksiyon (Constructor).
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), isHeadlightsOn(false), isDoor1Open(false), isDoor2Open(false), isHvacOn(false), motorTemp(25.0), inverterTemp(25.0), currentSpeed(0.0), frameTickCounter(0), currentRouteIndex(0), currentLat(0.0), currentLng(0.0), totalRemainingDistance(0.0), etaSeconds(0.0) {
     dbcParser = new DbcParser();
     networkManager = new QNetworkAccessManager(this);
@@ -183,11 +183,11 @@ void MainWindow::packSignal(QByteArray &frame, const DbcSignal &sig, uint64_t ra
 }
 
 
-    // Fizik motorunda hesaplanan araç verilerini (hýz, konum) DBC dosyasýna göre CAN frame'lerine çevirip veritabanýna basar.
+    // Fizik motorunda hesaplanan araï¿½ verilerini (hï¿½z, konum) DBC dosyasï¿½na gï¿½re CAN frame'lerine ï¿½evirip veritabanï¿½na basar.
 void MainWindow::generateCanFrame() {
     canMonitor->clear();
     
-    // Her 1 saniyede (10 tick) bir cache'i temizle ki Web UI sonradan aÃ§Ä±lÄ±rsa senkronize olabilsin.
+    // Her 1 saniyede (10 tick) bir cache'i temizle ki Web UI sonradan acilirsa senkronize olabilsin.
     frameTickCounter++;
     if (frameTickCounter >= 10) {
         lastLoggedValues.clear();
@@ -365,7 +365,7 @@ void MainWindow::generateCanFrame() {
 }
 
 
-    // Fizik motorunun ana döngüsü: Hýz, mesafe, batarya tüketimi ve motor sýcaklýk deðiþimlerini 50ms'de bir hesaplar.
+    // Fizik motorunun ana dï¿½ngï¿½sï¿½: Hï¿½z, mesafe, batarya tï¿½ketimi ve motor sï¿½caklï¿½k deï¿½iï¿½imlerini 50ms'de bir hesaplar.
 void MainWindow::physicsLoop() {
     currentSpeed = speedSlider->value();
     if (isHandbrakeOn && currentSpeed > 0) {
@@ -373,19 +373,19 @@ void MainWindow::physicsLoop() {
         currentSpeed = 0;
     }
     
-    // Daha dinamik motor sÄ±calÄ±ÄŸÄ± fiziÄŸi
+    // Daha dinamik motor sicaligi fizigi
     if (currentSpeed > 0 && motorTemp < 105.0) {
-        // HÄ±z arttÄ±kÃ§a daha hÄ±zlÄ± Ä±sÄ±nÄ±r (hÄ±z 100 ise 100ms'de +0.1 derece -> saniyede +1 derece)
+        // Hiz arttikca daha hizli isinir (hiz 100 ise 100ms'de +0.1 derece -> saniyede +1 derece)
         motorTemp += (currentSpeed / 1000.0); 
         inverterTemp += (currentSpeed / 1200.0);
     } else if (currentSpeed == 0 && motorTemp > 25.0 && !isHvacOn) {
-        // AraÃ§ durduÄŸunda yavaÅŸÃ§a ortam sÄ±caklÄ±ÄŸÄ±na (25) soÄŸur
+        // Arac durdugunda yavasca ortam sicakligina (25) sogur
         motorTemp -= 0.05; 
         inverterTemp -= 0.05;
     } 
 
     if (isHvacOn) {
-        // Klima aÃ§Ä±ksa aktif soÄŸutma (ortam sÄ±caklÄ±ÄŸÄ± 20'ye kadar)
+        // Klima aciksa aktif sogutma (ortam sicakligi 20'ye kadar)
         if (motorTemp > 20.0) motorTemp -= 0.15; 
         if (inverterTemp > 20.0) inverterTemp -= 0.15;
     }
@@ -411,14 +411,14 @@ void MainWindow::physicsLoop() {
             double distanceToTarget = 6371000 * c;
             
             if (distanceToMove >= distanceToTarget) {
-                // Noktaya ulaÅŸtÄ±, sonrakine geÃ§
+                // Noktaya ulasti, sonrakine gec
                 currentLat = targetLat;
                 currentLng = targetLng;
                 distanceToMove -= distanceToTarget;
                 totalRemainingDistance -= distanceToTarget;
                 currentRouteIndex++;
             } else {
-                // Hedefe doÄŸru vektÃ¶rel ilerle
+                // Hedefe dogru vektorel ilerle
                 double ratio = distanceToMove / distanceToTarget;
                 currentLat += (targetLat - currentLat) * ratio;
                 currentLng += (targetLng - currentLng) * ratio;
@@ -436,7 +436,7 @@ void MainWindow::physicsLoop() {
             etaSeconds = 0;
         }
         
-        // SÃ¼rÃ¼ÅŸ bittiyse
+        // Surus bittiyse
         if (currentRouteIndex >= currentRoute.size() - 1) {
             speedSlider->setValue(0);
             currentSpeed = 0;

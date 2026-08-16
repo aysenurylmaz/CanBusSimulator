@@ -1,8 +1,8 @@
-// CAN veriyolu (DBC) dosyalar�n� parse eden (ayr��t�ran), sinyal/mesaj kurallar�n� ��kartan as�l ayr��t�r�c� mant�k dosyas�d�r.
+// CAN veriyolu (DBC) dosyalar�n� parse eden (ayr��t�ran), sinyal/mesaj kurallar�n� ��kartan as�l ayr��t�r�c� mant�k dosyas�d�r.
 
 // dbcparser.cpp
-// Bu dosya, yüklenen DBC dosyalarını satır satır okuyan (parse eden) asıl motor kısmıdır.
-// Karmaşık Regex (Düzenli İfadeler) kullanarak metin içindeki verileri ayıklar.
+// Bu dosya, yuklenen DBC dosyalarini satir satir okuyan (parse eden) asil motor kismidir.
+// Karmasik Regex (Duzenli Ifadeler) kullanarak metin icindeki verileri ayiklar.
 #include "dbcparser.h"
 #include <QFile>
 #include <QTextStream>
@@ -17,89 +17,89 @@ DbcParser::DbcParser() {
 
 bool DbcParser::parseFile(const QString &filePath) {
     QFile file(filePath);
-    // Dosyayı 'Sadece Okunabilir' (ReadOnly) ve 'Metin' (Text) modunda açmaya çalışıyoruz.
+    // Dosyayi 'Sadece Okunabilir' (ReadOnly) ve 'Metin' (Text) modunda acmaya calisiyoruz.
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qDebug() << "Failed to open DBC file:" << filePath;
         return false;
     }
-    // Yeni bir dosya yükleniyorsa, hafızadaki eski DBC mesajlarını temizliyoruz.
+    // Yeni bir dosya yukleniyorsa, hafizadaki eski DBC mesajlarini temizliyoruz.
     m_messages.clear();
-    // Dosyayı satır satır okuyabilmek için bir metin akışı (stream) oluşturuyoruz
+    // Dosyayi satir satir okuyabilmek icin bir metin akisi (stream) olusturuyoruz
     QTextStream in(&file);
 
     // Regex for BO_ (Message)
-    // BO_ satırları, bir CAN mesajının Kimliğini (ID) ve Uzunluğunu (DLC) belirtir.
-    // Regex Açıklaması:
-    // ^\\s*BO_    : Satır başındaki boşlukları atla ve "BO_" kelimesini bul.
-    // (\\d+)      : 1. Yakalama Grubu -> Mesaj ID'si (Sadece rakamları al)
-    // (\\w+)      : 2. Yakalama Grubu -> Mesaj Adı (Harf ve rakamları al)
-    // (\\d+)      : 3. Yakalama Grubu -> Veri Uzunluğu / DLC (Sadece rakamları al)
+    // BO_ satirlari, bir CAN mesajinin Kimligini (ID) ve Uzunlugunu (DLC) belirtir.
+    // Regex Aciklamasi:
+    // ^\\s*BO_    : Satir basindaki bosluklari atla ve "BO_" kelimesini bul.
+    // (\\d+)      : 1. Yakalama Grubu -> Mesaj ID'si (Sadece rakamlari al)
+    // (\\w+)      : 2. Yakalama Grubu -> Mesaj Adi (Harf ve rakamlari al)
+    // (\\d+)      : 3. Yakalama Grubu -> Veri Uzunlugu / DLC (Sadece rakamlari al)
     QRegularExpression boRegex("^\\s*BO_\\s+(\\d+)\\s+(\\w+)\\s*:\\s+(\\d+)\\s+.*");
 
     // Regex for SG_ (Signal)
-    // Regex Açıklaması (Sırasıyla (...) içindeki Yakalama Grupları):
-    // 1: Sinyal Adı (\\w+)
-    // 2: Başlangıç Biti (\\d+)
+    // Regex Aciklamasi (Sirasiyla (...) icindeki Yakalama Gruplari):
+    // 1: Sinyal Adi (\\w+)
+    // 2: Baslangic Biti (\\d+)
     // 3: Uzunluk/BitLength (\\d+)
     // 4: Endianness - "1" (Little) veya "0" (Big) ([01])
-    // 5: İşaretli/İşaretsiz - "+" (Unsigned) veya "-" (Signed) ([\\+\\-])
-    // 6: Çarpan / Factor ([0-9\\.\\-]+)
+    // 5: Isaretli/Isaretsiz - "+" (Unsigned) veya "-" (Signed) ([\\+\\-])
+    // 6: Carpan / Factor ([0-9\\.\\-]+)
     // 7: Offset ([0-9\\.\\-]+)
-    // 8: Minimum Değer
-    // 9: Maksimum Değer
+    // 8: Minimum Deger
+    // 9: Maksimum Deger
     QRegularExpression sgRegex("^\\s*SG_\\s+(\\w+).*?:\\s+(\\d+)\\|(\\d+)@([01])([\\+\\-])\\s+\\(([0-9\\.\\-]+),([0-9\\.\\-]+)\\)\\s+\\[([0-9\\.\\-]+)\\|([0-9\\.\\-]+)\\]");
     
-    // Okuduğumuz sinyallerin (SG_) hangi ebeveyn mesaja (BO_) ait olduğunu bilmek için 
-    // ID'yi döngü dışında geçici bir değişkende tutuyoruz.
+    // Okudugumuz sinyallerin (SG_) hangi ebeveyn mesaja (BO_) ait oldugunu bilmek icin 
+    // ID'yi dongu disinda gecici bir degiskende tutuyoruz.
     uint32_t currentMessageId = 0;
     
-    // Dosyanın sonuna gelene kadar (atEnd) satır satır okumaya devam et.
+    // Dosyanin sonuna gelene kadar (atEnd) satir satir okumaya devam et.
     while (!in.atEnd()) {
         QString line = in.readLine();
 
-        // 1. KONTROL: Bu satır bir BO_ (Mesaj) satırı mı?
+        // 1. KONTROL: Bu satir bir BO_ (Mesaj) satiri mi?
         QRegularExpressionMatch boMatch = boRegex.match(line);
         if (boMatch.hasMatch()) {
             DbcMessage msg;
 
-            // Regex içindeki parantezlerle (...) yakaladığımız verileri index numarasıyla çekiyoruz.
-            msg.id = boMatch.captured(1).toUInt(); // 1. parantez: ID (unsigned integer'a çeviriyoruz)
-            msg.name = boMatch.captured(2); // 2. parantez: İsim (String olarak kalıyor)
-            msg.dlc = boMatch.captured(3).toInt(); // 3. parantez: Veri Uzunluğu (DLC)
+            // Regex icindeki parantezlerle (...) yakaladigimiz verileri index numarasiyla cekiyoruz.
+            msg.id = boMatch.captured(1).toUInt(); // 1. parantez: ID (unsigned integer'a ceviriyoruz)
+            msg.name = boMatch.captured(2); // 2. parantez: Isim (String olarak kaliyor)
+            msg.dlc = boMatch.captured(3).toInt(); // 3. parantez: Veri Uzunlugu (DLC)
             
-            currentMessageId = msg.id; // Alt satırlarda gelecek sinyaller bu mesaja ait olacak.
+            currentMessageId = msg.id; // Alt satirlarda gelecek sinyaller bu mesaja ait olacak.
 
-            // Mesajı hafızadaki listemize (QMap) ID'sini anahtar (key) yaparak ekliyoruz.
+            // Mesaji hafizadaki listemize (QMap) ID'sini anahtar (key) yaparak ekliyoruz.
             m_messages.insert(msg.id, msg);
             qDebug() << "Parsed BO_:" << msg.id << msg.name << "DLC:" << msg.dlc;
             continue;
         }
-        // 2. KONTROL: Bu satır bir SG_ (Sinyal) satırı mı?
-        // Ve öncesinde geçerli bir Mesaj (currentMessageId) bulduk mu?
+        // 2. KONTROL: Bu satir bir SG_ (Sinyal) satiri mi?
+        // Ve oncesinde gecerli bir Mesaj (currentMessageId) bulduk mu?
         QRegularExpressionMatch sgMatch = sgRegex.match(line);
         if (sgMatch.hasMatch() && currentMessageId != 0) {
             DbcSignal sig;
-            // Regex'teki 9 farklı grubu sırasıyla struct içindeki değişkenlere aktarıyoruz.
+            // Regex'teki 9 farkli grubu sirasiyla struct icindeki degiskenlere aktariyoruz.
             sig.name = sgMatch.captured(1);
             sig.startBit = sgMatch.captured(2).toInt();
             sig.length = sgMatch.captured(3).toInt();
-            sig.isLittleEndian = (sgMatch.captured(4) == "1"); // Endianness kontrolü: "1" e eşitse Little-Endian (Intel), değilse Big-Endian (Motorola)
-            sig.isUnsigned = (sgMatch.captured(5) == "+"); // İşaret kontrolü: "+" ise Unsigned (Sadece pozitif), "-" ise Signed (Negatif değer de alabilir)
-            // Çarpan, Offset, Min, Max (Ondalıklı sayı içerebilecekleri için double'a çeviriyoruz)
+            sig.isLittleEndian = (sgMatch.captured(4) == "1"); // Endianness kontrolu: "1" e esitse Little-Endian (Intel), degilse Big-Endian (Motorola)
+            sig.isUnsigned = (sgMatch.captured(5) == "+"); // Isaret kontrolu: "+" ise Unsigned (Sadece pozitif), "-" ise Signed (Negatif deger de alabilir)
+            // Carpan, Offset, Min, Max (Ondalikli sayi icerebilecekleri icin double'a ceviriyoruz)
             sig.factor = sgMatch.captured(6).toDouble();
             sig.offset = sgMatch.captured(7).toDouble();
             sig.min = sgMatch.captured(8).toDouble();
             sig.max = sgMatch.captured(9).toDouble();
-            sig.messageId = currentMessageId; // Bu sinyalin hangi ebeveyn mesaja ait olduğunu kaydediyoruz.
+            sig.messageId = currentMessageId; // Bu sinyalin hangi ebeveyn mesaja ait oldugunu kaydediyoruz.
 
-            m_messages[currentMessageId].msgSignals.insert(sig.name, sig); // Bulduğumuz sinyali, ilgili mesajın kendi içindeki sinyal listesine dahil ediyoruz.
+            m_messages[currentMessageId].msgSignals.insert(sig.name, sig); // Buldugumuz sinyali, ilgili mesajin kendi icindeki sinyal listesine dahil ediyoruz.
             qDebug() << "  Parsed SG_:" << sig.name << "StartBit:" << sig.startBit << "Length:" << sig.length << "LittleEndian:" << sig.isLittleEndian;
         }
     }
 
     file.close();
     
-    // Senkronizasyon için dosyayı JSON formatında Web'in okuduğu Shared klasörüne aktarıyoruz
+    // Senkronizasyon icin dosyayi JSON formatinda Web'in okudugu Shared klasorune aktariyoruz
     exportToJson("C:/Projeler/CanBusWebPlatform/Shared/parsed_dbc.json");
     
     return true;
@@ -112,7 +112,7 @@ void DbcParser::exportToJson(const QString &jsonPath) const {
         const DbcMessage &msg = msgIt.value();
         QJsonObject msgObj;
         
-        // JSON'da ID hex olarak tutulur (Örn: "0x1F4")
+        // JSON'da ID hex olarak tutulur (Orn: "0x1F4")
         msgObj["id"] = QString("0x%1").arg(msg.id, 0, 16);
         msgObj["name"] = msg.name;
         msgObj["dlc"] = msg.dlc;
@@ -174,13 +174,13 @@ DbcSignal DbcParser::findSignalByKeywords(const QStringList &keywords, bool &fou
     
     return DbcSignal();
 }
-// OOP (Nesne Yönelimli Programlama) - Encapsulation (Kapsülleme) gereği:
-// Dışarıdan, sınıfın gizli (private) üyesi olan 'm_messages' listesine 
-// dış müdahaleyi engellemek için sadece 'okuma' amaçlı bir erişim fonksiyonu (Getter).
+// OOP (Nesne Yonelimli Programlama) - Encapsulation (Kapsulleme) geregi:
+// Disaridan, sinifin gizli (private) uyesi olan 'm_messages' listesine 
+// dis mudahaleyi engellemek icin sadece 'okuma' amacli bir erisim fonksiyonu (Getter).
 QMap<uint32_t, DbcMessage> DbcParser::getMessages() const {
     return m_messages;
 }
-// DBC dosyasından hiçbir veri çıkarılamadıysa veya henüz dosya yüklenmediyse durumu kontrol eden yardımcı fonksiyon.
+// DBC dosyasindan hicbir veri cikarilamadiysa veya henuz dosya yuklenmediyse durumu kontrol eden yardimci fonksiyon.
 bool DbcParser::isEmpty() const {
     return m_messages.isEmpty();
 }

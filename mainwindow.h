@@ -1,8 +1,8 @@
-// MainWindow s�n�f�n�n tan�mlamalar�. UI bile�enleri, timer'lar ve fizik/ara� sim�lasyonu mant���na ait fonksiyon imzalar�n� bar�nd�r�r.
+// MainWindow s�n�f�n�n tan�mlamalar�. UI bile�enleri, timer'lar ve fizik/ara� sim�lasyonu mant���na ait fonksiyon imzalar�n� bar�nd�r�r.
 
 // mainwindow.h
-// KullanÄ±cÄ± arayÃ¼zÃ¼nÃ¼n (UI) baÅŸlÄ±k dosyasÄ±dÄ±r. ArayÃ¼zdeki butonlarÄ±n, 
-// kaydÄ±rÄ±cÄ±larÄ±n ve metin kutularÄ±nÄ±n tanÄ±mlarÄ±nÄ± iÃ§erir.
+// Kullanici arayuzunun (UI) baslik dosyasidir. Arayuzdeki butonlarin, 
+// kaydiricilarin ve metin kutularinin tanimlarini icerir.
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 

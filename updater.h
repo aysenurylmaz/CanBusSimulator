@@ -1,8 +1,8 @@
-// Uygulamanın kendini otomatik güncelleyebilmesi için gereken Updater sınıfının tanımlamaları.
+// Uygulamanï¿½n kendini otomatik gï¿½ncelleyebilmesi iï¿½in gereken Updater sï¿½nï¿½fï¿½nï¿½n tanï¿½mlamalarï¿½.
 
 // updater.h
-// Bu dosya, uygulamanÄ±n kendi kendini gÃ¼ncellemesini (OTA - Over The Air Update) 
-// saÄŸlayan Updater sÄ±nÄ±fÄ±nÄ±n tanÄ±mlarÄ±nÄ± iÃ§erir.
+// Bu dosya, uygulamanin kendi kendini guncellemesini (OTA - Over The Air Update) 
+// saglayan Updater sinifinin tanimlarini icerir.
 #ifndef UPDATER_H
 #define UPDATER_H
 

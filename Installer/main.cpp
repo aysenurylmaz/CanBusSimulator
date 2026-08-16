@@ -13,27 +13,27 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     app.setStyle(QStyleFactory::create("Fusion"));
 
-    // 1. AŞAMA: UNINSTALLER (KALDIRICI) KONTROLÜ
-    // Aynı .exe dosyası hem kurucu hem kaldırıcı olarak çalışıyor.
-    // İşletim sistemi bu programı "--uninstall" argümanı ile çalıştırdıysa, 
-    // kurulum arayüzünü HİÇ GÖSTERMEDEN doğrudan kaldırma moduna geçiyoruz.
+    // 1. ASAMA: UNINSTALLER (KALDIRICI) KONTROLU
+    // Ayni .exe dosyasi hem kurucu hem kaldirici olarak calisiyor.
+    // Isletim sistemi bu programi "--uninstall" argumani ile calistirdiysa, 
+    // kurulum arayuzunu HIC GOSTERMEDEN dogrudan kaldirma moduna geciyoruz.
     if (app.arguments().contains("--uninstall")) {
-        // Kullanıcıya yanlışlıkla tıklama ihtimaline karşı son bir onay soruyoruz.
+        // Kullaniciya yanlislikla tiklama ihtimaline karsi son bir onay soruyoruz.
         QMessageBox::StandardButton reply = QMessageBox::question(nullptr, 
-            QObject::tr("Kaldırma Onayı"),
-            QObject::tr("CanBusSimulator uygulamasını ve tüm bileşenlerini kaldırmak istediğinize emin misiniz?"),
+            QObject::tr("Kaldirma Onayi"),
+            QObject::tr("CanBusSimulator uygulamasini ve tum bilesenlerini kaldirmak istediginize emin misiniz?"),
             QMessageBox::Yes | QMessageBox::No);
 
         if (reply == QMessageBox::Yes) {
-            // 2. AŞAMA: REGISTRY (KAYIT DEFTERİ) TEMİZLİĞİ
-            // Kurulum yaparken Windows'un Denetim Masası listesine eklediğimiz kaydı bulup,
-            // "CanBusSimulator" klasörünü tamamen siliyoruz (İz bırakmıyoruz).
+            // 2. ASAMA: REGISTRY (KAYIT DEFTERI) TEMIZLIGI
+            // Kurulum yaparken Windows'un Denetim Masasi listesine ekledigimiz kaydi bulup,
+            // "CanBusSimulator" klasorunu tamamen siliyoruz (Iz birakmiyoruz).
             QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall", QSettings::NativeFormat);
             settings.remove("CanBusSimulator");
             qDebug() << "Registry keys removed.";
 
-            // 3. AŞAMA: MASAÜSTÜ KISAYOL TEMİZLİĞİ
-            // Kullanıcının masaüstü yolunu bulup, orada oluşturduğumuz .lnk dosyasını siliyoruz.
+            // 3. ASAMA: MASAUSTU KISAYOL TEMIZLIGI
+            // Kullanicinin masaustu yolunu bulup, orada olusturdugumuz .lnk dosyasini siliyoruz.
             QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
             QString shortcutPath = desktopPath + QDir::separator() + "CanBusSimulator.lnk";
             if (QFile::exists(shortcutPath)) {
@@ -41,27 +41,27 @@ int main(int argc, char *argv[])
                 qDebug() << "Shortcut removed.";
             }
             
-            // 4. AŞAMA: KENDİNİ SİLME ALGORİTMASI (BATON TESLİMİ)
-            // Bir program Windows'ta çalışırken kendi klasörünü veya .exe dosyasını SİLEMEZ!
-            // Bunu aşmak için System Hack (Sistem Hilesi) kullanıyoruz:
+            // 4. ASAMA: KENDINI SILME ALGORITMASI (BATON TESLIMI)
+            // Bir program Windows'ta calisirken kendi klasorunu veya .exe dosyasini SILEMEZ!
+            // Bunu asmak icin System Hack (Sistem Hilesi) kullaniyoruz:
             
-            // Çalışan programın bulunduğu klasör yolunu alıyoruz.
+            // Calisan programin bulundugu klasor yolunu aliyoruz.
             QString installDir = QCoreApplication::applicationDirPath();
             QString winInstallDir = QDir::toNativeSeparators(installDir);
             
-            // Arka planda gizli bir CMD (Terminal) komutu hazırlıyoruz:
-            // "ping 127.0.0.1 -n 3" komutu, CMD'nin işlemi yapmadan önce yaklaşık 2-3 saniye BEKLEMESİNİ sağlar.
-            // Bekleme bitince "rmdir /s /q" komutu ile klasör ve içindeki her şey ( .exe dahil) sessizce ve zorla silinir.
+            // Arka planda gizli bir CMD (Terminal) komutu hazirliyoruz:
+            // "ping 127.0.0.1 -n 3" komutu, CMD'nin islemi yapmadan once yaklasik 2-3 saniye BEKLEMESINI saglar.
+            // Bekleme bitince "rmdir /s /q" komutu ile klasor ve icindeki her sey ( .exe dahil) sessizce ve zorla silinir.
             QString cmd = QString("ping 127.0.0.1 -n 3 > nul & rmdir /s /q \"%1\"").arg(winInstallDir);
             QProcess::startDetached("cmd.exe", {"/c", cmd});
             
-            QMessageBox::information(nullptr, QObject::tr("Kaldırıldı"), QObject::tr("Uygulama başarıyla kaldırıldı."));
+            QMessageBox::information(nullptr, QObject::tr("Kaldirildi"), QObject::tr("Uygulama basariyla kaldirildi."));
         }
-        return 0; // Kaldırma işlemi tamamlandıktan sonra programdan çıkıyoruz.
+        return 0; // Kaldirma islemi tamamlandiktan sonra programdan cikiyoruz.
     }
-// 6. AŞAMA: NORMAL KURULUM MODU
-    // Eğer "--uninstall" parametresi YOKSA, demek ki kullanıcı programı kurmak istiyor.
-    // O zaman kurulum sihirbazını (QWizard) yaratıp ekranda gösteriyoruz.
+// 6. ASAMA: NORMAL KURULUM MODU
+    // Eger "--uninstall" parametresi YOKSA, demek ki kullanici programi kurmak istiyor.
+    // O zaman kurulum sihirbazini (QWizard) yaratip ekranda gosteriyoruz.
     InstallerWizard wizard;
     wizard.show();
 

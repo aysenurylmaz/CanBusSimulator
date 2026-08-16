@@ -1,8 +1,8 @@
-// Uzak sunucuya ba�lanarak versiyon kontrol� yapan ve gerekirse yeni g�ncellemeyi indirip kuran dosyad�r.
+// Uzak sunucuya ba�lanarak versiyon kontrol� yapan ve gerekirse yeni g�ncellemeyi indirip kuran dosyad�r.
 
 // updater.cpp
-// İnternet üzerinden (veya yerel sunucudan) güncel sürümü kontrol etme,
-// indirme ve eski .exe dosyasını silip yenisini başlatma işlemlerini yapar.
+// Internet uzerinden (veya yerel sunucudan) guncel surumu kontrol etme,
+// indirme ve eski .exe dosyasini silip yenisini baslatma islemlerini yapar.
 #include "updater.h"
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -14,65 +14,65 @@
 #include <QUrl>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QMessageBox> // MESAJ KUTUSU İÇİN EKLENEN KÜTÜPHANE
+#include <QMessageBox> // MESAJ KUTUSU ICIN EKLENEN KUTUPHANE
 
 Updater::Updater(QObject *parent) : QObject(parent) {
-    // İnternet/Ağ bağlantılarını (HTTP İstekleri) yönetecek sınıfı başlatıyoruz
+    // Internet/Ag baglantilarini (HTTP Istekleri) yonetecek sinifi baslatiyoruz
     networkManager = new QNetworkAccessManager(this);
 }
-// --- GÜNCELLEME KONTROLÜ (Adım 1) ---
+// --- GUNCELLEME KONTROLU (Adim 1) ---
 void Updater::checkForUpdates() {
     
-    // Sunucudaki version.json dosyasına (hangi sürümün en yeni olduğunu soran dosya) bir HTTP GET isteği atılır.
+    // Sunucudaki version.json dosyasina (hangi surumun en yeni oldugunu soran dosya) bir HTTP GET istegi atilir.
     QNetworkRequest request(QUrl("http://localhost:8080/version.json"));
     QNetworkReply *reply = networkManager->get(request);
 
-    // Sunucudan cevap (reply) geldiğinde (finished) çalışacak olan asenkron Lambda fonksiyonu
+    // Sunucudan cevap (reply) geldiginde (finished) calisacak olan asenkron Lambda fonksiyonu
     connect(reply, &QNetworkReply::finished, this, [=]() {
-        reply->deleteLater();// İşlem bitince hafızayı temizlemek için silinmek üzere işaretliyoruz
+        reply->deleteLater();// Islem bitince hafizayi temizlemek icin silinmek uzere isaretliyoruz
         
-        // Eğer sunucuya bağlanırken bir ağ hatası (İnternet yok, sunucu kapalı vb.) olduysa:
+        // Eger sunucuya baglanirken bir ag hatasi (Internet yok, sunucu kapali vb.) olduysa:
         if (reply->error() != QNetworkReply::NoError) {
             qDebug() << "Update check failed:" << reply->errorString();
-            // KULLANICIYA GÖSTERİLEN HATA MESAJI
-            QMessageBox::critical(nullptr, "Bağlanti Hatasi", "Güncelleme sunucusuna ulaşilamadi:\n" + reply->errorString());
+            // KULLANICIYA GOSTERILEN HATA MESAJI
+            QMessageBox::critical(nullptr, "Baglanti Hatasi", "Guncelleme sunucusuna ulasilamadi:\n" + reply->errorString());
             return;
         }
         
-        // Sunucudan gelen metin verisini okuyup JSON formatına dönüştürüyoruz
+        // Sunucudan gelen metin verisini okuyup JSON formatina donusturuyoruz
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
         
-        // Sunucudaki versiyon numarası şu anki versiyondan büyük mü diye kontrol ediyoruz
+        // Sunucudaki versiyon numarasi su anki versiyondan buyuk mu diye kontrol ediyoruz
         if (obj["latest_version"].toString().toFloat() > currentVersion.toFloat()) {
             qDebug() << "New version found! Downloading from:" << obj["download_url"].toString();
-            // Eğer büyükse, JSON içindeki "download_url" adresini alıp indirme işlemini başlatıyoruz
+            // Eger buyukse, JSON icindeki "download_url" adresini alip indirme islemini baslatiyoruz
             downloadAndApplyUpdate(obj["download_url"].toString());
         } else {
-            // Eğer sürüm aynı veya daha düşükse güncellemeye gerek yoktur
+            // Eger surum ayni veya daha dusukse guncellemeye gerek yoktur
             qDebug() << "Application is up to date.";
-            QMessageBox::information(nullptr, "Zaten Güncel", "Uygulamanız zaten güncel sürümde (v" + currentVersion + "). Yeni bir güncelleme bulunmuyor.");
+            QMessageBox::information(nullptr, "Zaten Guncel", "Uygulamaniz zaten guncel surumde (v" + currentVersion + "). Yeni bir guncelleme bulunmuyor.");
         }
     });
 }
-// --- GÜNCELLEMEYİ İNDİRME VE UYGULAMA (Adım 2) ---
+// --- GUNCELLEMEYI INDIRME VE UYGULAMA (Adim 2) ---
 void Updater::downloadAndApplyUpdate(const QString &fileUrl) {
-    //Yeni sürüm varsa .exe dosyası indirilmeye başlanır
+    //Yeni surum varsa .exe dosyasi indirilmeye baslanir
     QUrl url(fileUrl);
     QNetworkRequest request(url);
     QNetworkReply *reply = networkManager->get(request);
 
-    // İndirme işlemi bittiğinde çalışacak fonksiyon
+    // Indirme islemi bittiginde calisacak fonksiyon
     connect(reply, &QNetworkReply::finished, this, [=]() {
         reply->deleteLater();
         
-        // 1. Ağ hatasi kontrolü
+        // 1. Ag hatasi kontrolu
         if (reply->error() != QNetworkReply::NoError) {
             qDebug() << "File download network error:" << reply->errorString();
-            QMessageBox::critical(nullptr, "İndirme Hatasi", "Dosya indirilirken ağ bağlantisi koptu:\n" + reply->errorString());
+            QMessageBox::critical(nullptr, "Indirme Hatasi", "Dosya indirilirken ag baglantisi koptu:\n" + reply->errorString());
             return;
         }
 
-        // 2. Gerçek HTTP Başari (200) kontrolü
+        // 2. Gercek HTTP Basari (200) kontrolu
         int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         qDebug() << "HTTP Status Code:" << statusCode;
         
@@ -82,18 +82,18 @@ void Updater::downloadAndApplyUpdate(const QString &fileUrl) {
             return;
         }
 
-        // 3. Dosya boyutu ve veri kontrolü
-        QByteArray fileData = reply->readAll(); // İndirilen tüm veriyi RAM'e (fileData içine) alıyoruz
+        // 3. Dosya boyutu ve veri kontrolu
+        QByteArray fileData = reply->readAll(); // Indirilen tum veriyi RAM'e (fileData icine) aliyoruz
         qDebug() << "Downloaded file size:" << fileData.size() << "bytes";
 
         if (fileData.size() < 10000) { 
-            // Güvenlik Önlemi: İndirilen dosya 10 KB'tan küçükse bu bir .exe dosyası olamaz
+            // Guvenlik Onlemi: Indirilen dosya 10 KB'tan kucukse bu bir .exe dosyasi olamaz
             qDebug() << "CRITICAL ERROR: The downloaded file is too small! It might be corrupted or a text file.";
-            QMessageBox::critical(nullptr, "Dosya Hatasi", "İndirilen dosya çok küçük veya bozuk. Lütfen daha sonra tekrar deneyin.");
+            QMessageBox::critical(nullptr, "Dosya Hatasi", "Indirilen dosya cok kucuk veya bozuk. Lutfen daha sonra tekrar deneyin.");
             return;
         }
 
-        // Uygulamanin kesin ve tam klasör yolunu (Absolute Path) aliyoruz
+        // Uygulamanin kesin ve tam klasor yolunu (Absolute Path) aliyoruz
         QString appPath = QCoreApplication::applicationFilePath(); 
         QString appDir = QCoreApplication::applicationDirPath();   
         
@@ -101,18 +101,18 @@ void Updater::downloadAndApplyUpdate(const QString &fileUrl) {
         QString updateExePath = QDir(appDir).filePath("update.exe");
         QFile file(updateExePath);
         
-        // Dosyayı yazma (WriteOnly) modunda oluşturmayı deniyoruz (Klasör izinleri yetersiz olabilir, kontrol şart)
+        // Dosyayi yazma (WriteOnly) modunda olusturmayi deniyoruz (Klasor izinleri yetersiz olabilir, kontrol sart)
         if (!file.open(QIODevice::WriteOnly)) {
             qDebug() << "Failed to create update.exe! Check folder permissions.";
-            QMessageBox::critical(nullptr, "Erişim Hatasi", "Güncelleme dosyasi yazilamadi. Klasör yetkilerini kontrol edin.");
+            QMessageBox::critical(nullptr, "Erisim Hatasi", "Guncelleme dosyasi yazilamadi. Klasor yetkilerini kontrol edin.");
             return;
         }
-        // İndirilen veriyi update.exe'nin içine yaz ve dosyayı kapat
+        // Indirilen veriyi update.exe'nin icine yaz ve dosyayi kapat
         file.write(fileData);
         file.close(); 
 
-        // // --- UYGULAMAYI YENİLEME SÜRECİ: BAT dosyasini oluştur
-        // Uygulamanın kendi kendini silebilmesi için geçici bir .bat dosyası yazılır.
+        // // --- UYGULAMAYI YENILEME SURECI: BAT dosyasini olustur
+        // Uygulamanin kendi kendini silebilmesi icin gecici bir .bat dosyasi yazilir.
         QString batPath = QDir(appDir).filePath("update.bat");
         QFile bat(batPath);
         
@@ -122,26 +122,26 @@ void Updater::downloadAndApplyUpdate(const QString &fileUrl) {
             QString winAppPath = appPath; winAppPath.replace("/", "\\");
             QString winAppDir = appDir; winAppDir.replace("/", "\\");
             
-            // BAT dosyasının içine komutları yazıyoruz:
-            stream << "@echo off\r\n"                             // Konsolda yazıları gizle
-                   << "cd /d \"" << winAppDir << "\"\r\n"         // Programın klasörüne git
-                   << "timeout /t 2 /nobreak > nul\r\n"           // Programın tamamen kapanması için 2 saniye bekle (ÖNEMLİ!)
-                   << "del /f /q \"" << winAppPath << "\"\r\n"    // Eski "CanBusSimulator.exe" dosyasını zorla sil
-                   << "ren \"update.exe\" \"CanBusSimulator.exe\"\r\n" // Yeni inen "update.exe"nin adını "CanBusSimulator.exe" yap
-                   << "start \"\" \"" << winAppPath << "\"\r\n"   // Yeni güncellenmiş uygulamayı başlat
-                   << "del \"%~f0\"\r\n"                          // İşlem bitince bu BAT dosyasının KENDİ KENDİNİ SİLMESİNİ sağla
+            // BAT dosyasinin icine komutlari yaziyoruz:
+            stream << "@echo off\r\n"                             // Konsolda yazilari gizle
+                   << "cd /d \"" << winAppDir << "\"\r\n"         // Programin klasorune git
+                   << "timeout /t 2 /nobreak > nul\r\n"           // Programin tamamen kapanmasi icin 2 saniye bekle (ONEMLI!)
+                   << "del /f /q \"" << winAppPath << "\"\r\n"    // Eski "CanBusSimulator.exe" dosyasini zorla sil
+                   << "ren \"update.exe\" \"CanBusSimulator.exe\"\r\n" // Yeni inen "update.exe"nin adini "CanBusSimulator.exe" yap
+                   << "start \"\" \"" << winAppPath << "\"\r\n"   // Yeni guncellenmis uygulamayi baslat
+                   << "del \"%~f0\"\r\n"                          // Islem bitince bu BAT dosyasinin KENDI KENDINI SILMESINI sagla
                    << "exit\r\n";                                 // Komut istemini kapat
             bat.close();
         }
 
         qDebug() << "Update downloaded successfully. Restarting application...";
         
-        // Oluşturduğumuz bu .bat dosyasını CMD üzerinden, programımızdan bağımsız (Detached) çalışacak şekilde tetikliyoruz.
+        // Olusturdugumuz bu .bat dosyasini CMD uzerinden, programimizdan bagimsiz (Detached) calisacak sekilde tetikliyoruz.
         QString winBatPath = batPath; winBatPath.replace("/", "\\");
         QProcess::startDetached("cmd.exe", {"/c", winBatPath});
         
-        // .bat dosyası çalışmaya ve 2 saniye geri saymaya başladı.
-        // O geri sayarken biz de mevcut çalışan eski uygulamayı hemen kapatıyoruz ki dosya kilidi (file lock) kalksın ve .bat dosyası silebilsin.
+        // .bat dosyasi calismaya ve 2 saniye geri saymaya basladi.
+        // O geri sayarken biz de mevcut calisan eski uygulamayi hemen kapatiyoruz ki dosya kilidi (file lock) kalksin ve .bat dosyasi silebilsin.
         QCoreApplication::quit(); 
     });
 }

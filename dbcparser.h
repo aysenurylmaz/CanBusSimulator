@@ -1,8 +1,8 @@
-// DBC dosyalarını okuyup anlamlandırmak için kullanılan DbcParser sınıfının tanımlamalarını içerir.
+// DBC dosyalarï¿½nï¿½ okuyup anlamlandï¿½rmak iï¿½in kullanï¿½lan DbcParser sï¿½nï¿½fï¿½nï¿½n tanï¿½mlamalarï¿½nï¿½ iï¿½erir.
 
 // dbcparser.h
-// Bu dosya, DBC Parser sÄ±nÄ±fÄ±nÄ±n (class) tanÄ±mÄ±nÄ± (baÅŸlÄ±klarÄ±nÄ±) iÃ§erir.
-// DBC dosyasÄ±ndaki verileri tutmak iÃ§in gerekli yapÄ±larÄ± (struct) tanÄ±mlar.
+// Bu dosya, DBC Parser sinifinin (class) tanimini (basliklarini) icerir.
+// DBC dosyasindaki verileri tutmak icin gerekli yapilari (struct) tanimlar.
 #ifndef DBCPARSER_H
 #define DBCPARSER_H
 
