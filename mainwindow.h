@@ -1,10 +1,10 @@
-// MainWindow sinifinin tanimlamalari. U bilesenleri, timer'lar ve fizik/arac simulasyonu mantigina ait fonksiyon imzalarini barindirir.
+// MainWindow sinifinin tanimlamalari. UI bilesenleri, timer'lar ve fizik/arac simulasyonu mantigina ait fonksiyon imzalarini barindirir.
 
 // mainwindow.h
-// Kullanici arayuzunun (U) baslik dosyasidir. Arayuzdeki butonlarin, 
+// Kullanici arayuzunun (UI) baslik dosyasidir. Arayuzdeki butonlarin, 
 // kaydiricilarin ve metin kutularinin tanimlarini icerir.
-#ifndef MANWNDOW_H
-#define MANWNDOW_H
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
 #include <QWidget>
 #include <QPushButton>
@@ -41,7 +41,7 @@ private slots:
 
 private:
     void updateToggleButton(QPushButton* btn, bool state, const QString& onText, const QString& offText, const QString& onColor, const QString& offColor);
-    // U Elements
+    // UI Elements
     QPushButton *handbrakeBtn;
     QSlider *speedSlider;
     QSpinBox *speedSpinBox;
@@ -60,7 +60,7 @@ private:
     // GPS & Route State
     struct GeoPoint { double lat; double lng; };
     QList<GeoPoint> currentRoute;
-    int currentRoutendex;
+    int currentRouteIndex;
     double currentLat;
     double currentLng;
     double totalRemainingDistance;
@@ -86,6 +86,6 @@ private:
     void exportDbcToJson(const QString& outputPath);
 };
 
-#endif // MANWNDOW_H
+#endif // MAINWINDOW_H
 
 

@@ -16,7 +16,7 @@ public:
     bool connectToDatabase();
     bool transaction();
     bool commit();
-    void logSignal(const QString& messaged, const QString& signalName, double physicalValue, const QString& rawHex);
+    void logSignal(const QString& messageId, const QString& signalName, double physicalValue, const QString& rawHex);
 
 signals:
     void commandReceived(const QString& commandName, const QString& commandValue);

@@ -2,18 +2,18 @@
 
 #include <QDir>
 #include <QFile>
-#include <QFilenfo>
+#include <QFileInfo>
 #include <QStandardPaths>
-// Eger kod Windows'ta derleniyorsa (Q_OS_WN), Windows AP kutuphanelerini dahil et.
+// Eger kod Windows'ta derleniyorsa (Q_OS_WIN), Windows API kutuphanelerini dahil et.
 // Bu sayede ayni kod Linux'ta derlenirse hata vermez (Cross-platform uyumlulugu).
-#ifdef Q_OS_WN
+#ifdef Q_OS_WIN
 #include <windows.h>
 #include <shobjidl.h>
 #include <shlguid.h>
 #endif
 
-namespace nstallerUtils {
-// 1. FONKSYON: DOSYA VE KLASOR KOPYALAMA (RECURSVE - OZYNELEMEL)
+namespace InstallerUtils {
+// 1. FONKSIYON: DOSYA VE KLASOR KOPYALAMA (RECURSIVE - OZYINELEMELI)
 // Bu fonksiyon, kaynagin (:/payload) icindeki tum klasorleri ve dosyalari 
 // alt klasorleriyle birlikte hedef dizine kopyalar.
 bool copyResources(const QString &sourceDir, const QString &destDir, QString &errorMessage)
@@ -29,7 +29,7 @@ bool copyResources(const QString &sourceDir, const QString &destDir, QString &er
         errorMessage = "Could not create destination directory: " + destDir;
         return false;
     }
-    // 1. ASAMA: KLASORLER GEZME (RECURSON)
+    // 1. ASAMA: KLASORLERI GEZME (RECURSION)
     // Kaynak klasorun icindeki tum alt klasorleri listele 
     foreach (QString dirName, src.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
         QString dstPath = destDir + QDir::separator() + dirName;
@@ -38,7 +38,7 @@ bool copyResources(const QString &sourceDir, const QString &destDir, QString &er
             return false;
         }
     }
-    // 2. ASAMA: DOSYALAR KOPYALAMA
+    // 2. ASAMA: DOSYALARI KOPYALAMA
     // Sadece dosyalari listele
     foreach (QString fileName, src.entryList(QDir::Files)) {
         QString srcFilePath = sourceDir + "/" + fileName;
@@ -66,30 +66,30 @@ bool copyResources(const QString &sourceDir, const QString &destDir, QString &er
 
     return true;
 }
-// 2. FONKSYON: MASAUSTU KSAYOLU OLUSTURMA (WNDOWS COM AP)
-// sletim sisteminin derinliklerine inip standart bir .lnk (Kisayol) dosyasi uretir.
+// 2. FONKSIYON: MASAUSTU KISAYOLU OLUSTURMA (WINDOWS COM API)
+// Isletim sisteminin derinliklerine inip standart bir .lnk (Kisayol) dosyasi uretir.
 bool createDesktopShortcut(const QString &targetFile, const QString &shortcutName, const QString &workingDirectory, QString &errorMessage)
 {
-#ifdef Q_OS_WN
+#ifdef Q_OS_WIN
     HRESULT hres;
-    ShellLink* psl;
+    IShellLink* psl;
 
     // 1. COM (Component Object Model) kutuphanesini baslatiyoruz.
-    Conitialize(NULL);
+    CoInitialize(NULL);
 
-    // 2. Bellekte bos bir Kisayol objesi (ShellLink) olusturuyoruz.
-    hres = CoCreatenstance(CLSD_ShellLink, NULL, CLSCTX_NPROC_SERVER, D_ShellLink, (LPVOD*)&psl);
+    // 2. Bellekte bos bir Kisayol objesi (IShellLink) olusturuyoruz.
+    hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl);
     if (SUCCEEDED(hres)) {
-        PersistFile* ppf;
+        IPersistFile* ppf;
 
         // 3. Kisayolun ozelliklerini atiyoruz.
-        // Windows AP, Qt'nin standart String'lerini anlamaz. Bu yuzden "toStdWString().c_str()" 
+        // Windows API, Qt'nin standart String'lerini anlamaz. Bu yuzden "toStdWString().c_str()" 
         // kullanarak metinleri Windows'un anlayacagi "Genis Karakterli" (Wide String) formata ceviriyoruz.
         psl->SetPath(QDir::toNativeSeparators(targetFile).toStdWString().c_str());
         psl->SetWorkingDirectory(QDir::toNativeSeparators(workingDirectory).toStdWString().c_str());
 
-        // 4. Hafizadaki bu objeyi diske yazabilmek icin PersistFile (Kalici Dosya) yetenegini cagiriyoruz.
-        hres = psl->Querynterface(D_PersistFile, (LPVOD*)&ppf);
+        // 4. Hafizadaki bu objeyi diske yazabilmek icin IPersistFile (Kalici Dosya) yetenegini cagiriyoruz.
+        hres = psl->QueryInterface(IID_IPersistFile, (LPVOID*)&ppf);
 
         if (SUCCEEDED(hres)) {
             // Qt yardimiyla isletim sisteminin Masaustu (Desktop) yolunu buluyoruz (Orn: C:\Users\Kullanici\Desktop)
@@ -99,18 +99,18 @@ bool createDesktopShortcut(const QString &targetFile, const QString &shortcutNam
 
             // 5. Kisayolu masaustune fiziksel bir dosya (.lnk) olarak kaydediyoruz.
             hres = ppf->Save(shortcutPath.toStdWString().c_str(), TRUE);
-            if (FALED(hres)) {
+            if (FAILED(hres)) {
                 errorMessage = "Failed to save the shortcut to desktop.";
             }
-            // simiz bitince PersistFile objesini hafizadan serbest birakiyoruz (Memory Leak onlemi).
+            // Isimiz bitince IPersistFile objesini hafizadan serbest birakiyoruz (Memory Leak onlemi).
             ppf->Release();
         } else {
-            errorMessage = "Failed to query PersistFile interface.";
+            errorMessage = "Failed to query IPersistFile interface.";
         }
-        // simiz bitince ShellLink objesini serbest birakiyoruz.
+        // Isimiz bitince IShellLink objesini serbest birakiyoruz.
         psl->Release();
     } else {
-        errorMessage = "Failed to create ShellLink instance.";
+        errorMessage = "Failed to create IShellLink instance.";
     }
 // COM sistemini kapatiyoruz.
     CoUninitialize();
@@ -130,4 +130,4 @@ bool createDesktopShortcut(const QString &targetFile, const QString &shortcutNam
 #endif
 }
 
-} // namespace nstallerUtils
+} // namespace InstallerUtils

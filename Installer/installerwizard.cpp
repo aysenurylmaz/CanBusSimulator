@@ -3,12 +3,12 @@
 
 #include <QtWidgets>
 
-// 1. ADM: HOSGELDNZ SAYFAS
-class ntroPage : public QWizardPage
+// 1. ADIM: HOSGELDINIZ SAYFASI
+class IntroPage : public QWizardPage
 {
 public:
-    ntroPage(QWidget *parent = nullptr) : QWizardPage(parent) {
-        setTitle(tr("Welcome to the CanBusSimulator nstaller"));
+    IntroPage(QWidget *parent = nullptr) : QWizardPage(parent) {
+        setTitle(tr("Welcome to the CanBusSimulator Installer"));
         QLabel *label = new QLabel(tr("This wizard will guide you through the installation of CanBusSimulator."));
         label->setWordWrap(true);
         QVBoxLayout *layout = new QVBoxLayout;
@@ -17,13 +17,13 @@ public:
     }
 };
 
-// 2. ADM: KURULUM DZN SECME SAYFAS
+// 2. ADIM: KURULUM DIZINI SECME SAYFASI
 class DirectoryPage : public QWizardPage
 {
     Q_OBJECT
 public:
     DirectoryPage(QWidget *parent = nullptr) : QWizardPage(parent) {
-        setTitle(tr("nstallation Directory"));
+        setTitle(tr("Installation Directory"));
         setSubTitle(tr("Please select where you want to install the application."));
 
         directoryLineEdit = new QLineEdit;
@@ -42,7 +42,7 @@ public:
     }
 
     void initializePage() override {
-       // sletim sistemine gore standart "AppData" veya "Program Files" klasorunu otomatik bulur.
+       // Isletim sistemine gore standart "AppData" veya "Program Files" klasorunu otomatik bulur.
         QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/CanBusSimulatorApp";
         // Bulunan klasor yolunu Windows formatina (ters slash '\' kullanacak sekilde) cevirip ekrana yazar.
         directoryLineEdit->setText(QDir::toNativeSeparators(defaultPath));
@@ -51,7 +51,7 @@ public:
 private slots:
 // Kullanici "Gozat" butonuna bastiginda calisan fonksiyon.
     void browse() {
-        QString dir = QFileDialog::getExistingDirectory(this, tr("Select nstallation Directory"), directoryLineEdit->text());
+        QString dir = QFileDialog::getExistingDirectory(this, tr("Select Installation Directory"), directoryLineEdit->text());
         if (!dir.isEmpty()) {
             directoryLineEdit->setText(QDir::toNativeSeparators(dir));
         }
@@ -60,13 +60,13 @@ private slots:
 private:
     QLineEdit *directoryLineEdit;
 };
-// 3. ADM: SECENEKLER SAYFAS
+// 3. ADIM: SECENEKLER SAYFASI
 // Masaustu kisayolu olusturulsun mu gibi ekstra seceneklerin sunuldugu sayfa.
 class OptionsPage : public QWizardPage
 {
 public:
     OptionsPage(QWidget *parent = nullptr) : QWizardPage(parent) {
-        setTitle(tr("nstallation Options"));
+        setTitle(tr("Installation Options"));
         setSubTitle(tr("Select additional tasks to be performed."));
 
         shortcutCheckBox = new QCheckBox(tr("Create Desktop Shortcut"));
@@ -80,14 +80,14 @@ public:
 private:
     QCheckBox *shortcutCheckBox;
 };
-// 4. ADM: KURULUM (LERLEME) SAYFAS
+// 4. ADIM: KURULUM (ILERLEME) SAYFASI
 // Asil islemlerin, dosya kopyalamanin ve Registry kayitlarinin yapildigi kritik sayfadir.
 class ProgressPage : public QWizardPage
 {
     Q_OBJECT
 public:
     ProgressPage(QWidget *parent = nullptr) : QWizardPage(parent) {
-        setTitle(tr("nstalling"));
+        setTitle(tr("Installing"));
         setSubTitle(tr("Please wait while the application installs."));
 
         progressBar = new QProgressBar;
@@ -105,19 +105,19 @@ public:
         progressBar->setValue(0);
         statusLabel->setText(tr("Starting installation..."));
         
-       // COK ONEML: slemi dogrudan baslatmiyoruz, 100 milisaniye gecikmeyle (QTimer) baslatiyoruz.
-        // Eger dogrudan baslatirsak arayuz donar (U Freeze) ve kullanici sayfayi goremez.
+       // COK ONEMLI: Islemi dogrudan baslatmiyoruz, 100 milisaniye gecikmeyle (QTimer) baslatiyoruz.
+        // Eger dogrudan baslatirsak arayuz donar (UI Freeze) ve kullanici sayfayi goremez.
         // Bu sayede arayuz ekrana cizilir, ardindan arka planda kopyalama islemi baslar.
-        QTimer::singleShot(100, this, &ProgressPage::performnstallation);
+        QTimer::singleShot(100, this, &ProgressPage::performInstallation);
     }
-        // Sihirbazin 'leri' butonuna basilabilmesi icin bu fonksiyonun 'true' donmesi gerekir.
+        // Sihirbazin 'Ileri' butonuna basilabilmesi icin bu fonksiyonun 'true' donmesi gerekir.
     // Kurulum bitene kadar 'false' doneriz ki kullanici islem bitmeden sayfayi gecemesin.
     bool isComplete() const override {
         return m_isComplete;
     }
 
 private slots:
-    void performnstallation() {
+    void performInstallation() {
         // Onceki sayfalarda 'registerField' ile kaydettigimiz verileri geri cekiyoruz.
         QString destDir = field("installationDirectory").toString();// Kurulum yapilacak klasor
         bool createShortcut = field("createShortcut").toBool();// Kisayol istendi mi?
@@ -128,9 +128,9 @@ private slots:
 
         QString errorMsg;
         // Qt'nin .qrc (Resource) dosyasinin icine gomdugumuz dosyalari (:/payload), hedef klasore cikariyoruz.
-        if (!nstallerUtils::copyResources(":/payload", destDir, errorMsg)) {
-            QMessageBox::critical(this, tr("nstallation Error"), tr("Failed to copy files:\n%1").arg(errorMsg));
-            statusLabel->setText(tr("nstallation failed."));
+        if (!InstallerUtils::copyResources(":/payload", destDir, errorMsg)) {
+            QMessageBox::critical(this, tr("Installation Error"), tr("Failed to copy files:\n%1").arg(errorMsg));
+            statusLabel->setText(tr("Installation failed."));
             return;
         }
 
@@ -140,7 +140,7 @@ private slots:
         if (createShortcut) {
             statusLabel->setText(tr("Creating shortcut..."));
             QString targetExe = destDir + QDir::separator() + "CanBusSimulator.exe";
-            if (!nstallerUtils::createDesktopShortcut(targetExe, "CanBusSimulator", destDir, errorMsg)) {
+            if (!InstallerUtils::createDesktopShortcut(targetExe, "CanBusSimulator", destDir, errorMsg)) {
                 QMessageBox::warning(this, tr("Shortcut Error"), tr("Failed to create desktop shortcut:\n%1").arg(errorMsg));
             }
         }
@@ -148,13 +148,13 @@ private slots:
         statusLabel->setText(tr("Registering application..."));
         QCoreApplication::processEvents();
 
-        // UNNSTALLER (Kaldirici) OLUSTURMA MANTG:
+        // UNINSTALLER (Kaldirici) OLUSTURMA MANTIGI:
         // Aslinda ayri bir uninstaller programimiz yok. Suan calisan installer'in (kendisinin) 
         // bir kopyasini hedef klasore "uninstall.exe" adiyla kopyaliyoruz.
         QString uninstallerPath = destDir + QDir::separator() + "uninstall.exe";
         QFile::copy(QCoreApplication::applicationFilePath(), uninstallerPath);
 
-        // REGSTRY (KAYT DEFTER) SLEMLER:
+        // REGISTRY (KAYIT DEFTERI) ISLEMLERI:
         // Programin Windows Denetim Masasinda (Program Ekle/Kaldir) gorunmesi icin gereken anahtarlari yaziyoruz.
         // QSettings'in "NativeFormat" parametresi, islemin dogrudan Windows Registry'ye yapilmasini saglar.
         QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\CanBusSimulator", QSettings::NativeFormat);
@@ -162,14 +162,14 @@ private slots:
         
         // Kullanici 'Kaldir' dediginde calisacak komut (Kendimizi --uninstall parametresiyle cagiriyoruz)
         settings.setValue("UninstallString", "\"" + QDir::toNativeSeparators(uninstallerPath) + "\" --uninstall");
-        settings.setValue("nstallLocation", QDir::toNativeSeparators(destDir));
+        settings.setValue("InstallLocation", QDir::toNativeSeparators(destDir));
         settings.setValue("Publisher", "Aysenur");
         QString targetExe = destDir + QDir::separator() + "CanBusSimulator.exe";
-        settings.setValue("Displaycon", QDir::toNativeSeparators(targetExe));
+        settings.setValue("DisplayIcon", QDir::toNativeSeparators(targetExe));
         settings.sync();// Yazilan degerleri Registry'ye kalici olarak kaydet.
 
         progressBar->setValue(100);
-        statusLabel->setText(tr("nstallation complete."));
+        statusLabel->setText(tr("Installation complete."));
         m_isComplete = true;
         emit completeChanged();
     }
@@ -179,13 +179,13 @@ private:
     QLabel *statusLabel;
     bool m_isComplete = false;
 };
-// 5. ADM: SONUC SAYFAS
+// 5. ADIM: SONUC SAYFASI
 // Kurulumun basariyla bittigini bildiren son ekran.
 class ConclusionPage : public QWizardPage
 {
 public:
     ConclusionPage(QWidget *parent = nullptr) : QWizardPage(parent) {
-        setTitle(tr("Completing the nstaller"));
+        setTitle(tr("Completing the Installer"));
         QLabel *label = new QLabel(tr("The application has been successfully installed on your computer.\n\nClick Finish to exit."));
         label->setWordWrap(true);
         QVBoxLayout *layout = new QVBoxLayout;
@@ -193,30 +193,30 @@ public:
         setLayout(layout);
     }
 };
-// ANA SHRBAZ SNF
+// ANA SIHIRBAZ SINIFI
 // Tum sayfalari bir araya getirip siraya dizdigimiz merkez burasidir.
-nstallerWizard::nstallerWizard(QWidget *parent)
+InstallerWizard::InstallerWizard(QWidget *parent)
     : QWizard(parent)
 {
-    introPage = new ntroPage;
+    introPage = new IntroPage;
     directoryPage = new DirectoryPage;
     optionsPage = new OptionsPage;
     progressPage = new ProgressPage;
     conclusionPage = new ConclusionPage;
 
     // Sayfalari sihirbaza tanimliyoruz.
-    setPage(Page_ntro, introPage);
+    setPage(Page_Intro, introPage);
     setPage(Page_Directory, directoryPage);
     setPage(Page_Options, optionsPage);
     setPage(Page_Progress, progressPage);
     setPage(Page_Conclusion, conclusionPage);
 
-    setStartd(Page_ntro);
+    setStartId(Page_Intro);
 
-    setWindowTitle(tr("CanBusSimulator nstaller"));
+    setWindowTitle(tr("CanBusSimulator Installer"));
     resize(500, 400);
 
-    // GORUNUM (U) DUZELTMES:
+    // GORUNUM (UI) DUZELTMESI:
     // Eger kullanicinin bilgisayari 'Karanlik Mod'da (Dark Mode) ise, yazilar beyaz olabilir.
     // Sihirbazin arka plani zaten beyaz oldugu icin yazilar okunmaz hale gelir.
     // Bunu engellemek icin CheckBox, Label ve RadioButton yazilarinin rengini zorla Siyah yapiyoruz.

@@ -1,7 +1,7 @@
 // Uzak sunucuya baglanarak versiyon kontrolu yapan ve gerekirse yeni guncellemeyi indirip kuran dosyadir.
 
 // updater.cpp
-// nternet uzerinden (veya yerel sunucudan) guncel surumu kontrol etme,
+// Internet uzerinden (veya yerel sunucudan) guncel surumu kontrol etme,
 // indirme ve eski .exe dosyasini silip yenisini baslatma islemlerini yapar.
 #include "updater.h"
 #include <QJsonDocument>
@@ -14,10 +14,10 @@
 #include <QUrl>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QMessageBox> // MESAJ KUTUSU CN EKLENEN KUTUPHANE
+#include <QMessageBox> // MESAJ KUTUSU ICIN EKLENEN KUTUPHANE
 
 Updater::Updater(QObject *parent) : QObject(parent) {
-    // nternet/Ag baglantilarini (HTTP stekleri) yonetecek sinifi baslatiyoruz
+    // Internet/Ag baglantilarini (HTTP Istekleri) yonetecek sinifi baslatiyoruz
     networkManager = new QNetworkAccessManager(this);
 }
 // --- GUNCELLEME KONTROLU (Adim 1) ---
@@ -29,12 +29,12 @@ void Updater::checkForUpdates() {
 
     // Sunucudan cevap (reply) geldiginde (finished) calisacak olan asenkron Lambda fonksiyonu
     connect(reply, &QNetworkReply::finished, this, [=]() {
-        reply->deleteLater();// slem bitince hafizayi temizlemek icin silinmek uzere isaretliyoruz
+        reply->deleteLater();// Islem bitince hafizayi temizlemek icin silinmek uzere isaretliyoruz
         
-        // Eger sunucuya baglanirken bir ag hatasi (nternet yok, sunucu kapali vb.) olduysa:
+        // Eger sunucuya baglanirken bir ag hatasi (Internet yok, sunucu kapali vb.) olduysa:
         if (reply->error() != QNetworkReply::NoError) {
             qDebug() << "Update check failed:" << reply->errorString();
-            // KULLANCYA GOSTERLEN HATA MESAJ
+            // KULLANICIYA GOSTERILEN HATA MESAJI
             QMessageBox::critical(nullptr, "Baglanti Hatasi", "Guncelleme sunucusuna ulasilamadi:\n" + reply->errorString());
             return;
         }
@@ -54,26 +54,26 @@ void Updater::checkForUpdates() {
         }
     });
 }
-// --- GUNCELLEMEY NDRME VE UYGULAMA (Adim 2) ---
+// --- GUNCELLEMEYI INDIRME VE UYGULAMA (Adim 2) ---
 void Updater::downloadAndApplyUpdate(const QString &fileUrl) {
     //Yeni surum varsa .exe dosyasi indirilmeye baslanir
     QUrl url(fileUrl);
     QNetworkRequest request(url);
     QNetworkReply *reply = networkManager->get(request);
 
-    // ndirme islemi bittiginde calisacak fonksiyon
+    // Indirme islemi bittiginde calisacak fonksiyon
     connect(reply, &QNetworkReply::finished, this, [=]() {
         reply->deleteLater();
         
         // 1. Ag hatasi kontrolu
         if (reply->error() != QNetworkReply::NoError) {
             qDebug() << "File download network error:" << reply->errorString();
-            QMessageBox::critical(nullptr, "ndirme Hatasi", "Dosya indirilirken ag baglantisi koptu:\n" + reply->errorString());
+            QMessageBox::critical(nullptr, "Indirme Hatasi", "Dosya indirilirken ag baglantisi koptu:\n" + reply->errorString());
             return;
         }
 
         // 2. Gercek HTTP Basari (200) kontrolu
-        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).tont();
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         qDebug() << "HTTP Status Code:" << statusCode;
         
         if (statusCode != 200) {
@@ -83,13 +83,13 @@ void Updater::downloadAndApplyUpdate(const QString &fileUrl) {
         }
 
         // 3. Dosya boyutu ve veri kontrolu
-        QByteArray fileData = reply->readAll(); // ndirilen tum veriyi RAM'e (fileData icine) aliyoruz
+        QByteArray fileData = reply->readAll(); // Indirilen tum veriyi RAM'e (fileData icine) aliyoruz
         qDebug() << "Downloaded file size:" << fileData.size() << "bytes";
 
         if (fileData.size() < 10000) { 
-            // Guvenlik Onlemi: ndirilen dosya 10 KB'tan kucukse bu bir .exe dosyasi olamaz
-            qDebug() << "CRTCAL ERROR: The downloaded file is too small! t might be corrupted or a text file.";
-            QMessageBox::critical(nullptr, "Dosya Hatasi", "ndirilen dosya cok kucuk veya bozuk. Lutfen daha sonra tekrar deneyin.");
+            // Guvenlik Onlemi: Indirilen dosya 10 KB'tan kucukse bu bir .exe dosyasi olamaz
+            qDebug() << "CRITICAL ERROR: The downloaded file is too small! It might be corrupted or a text file.";
+            QMessageBox::critical(nullptr, "Dosya Hatasi", "Indirilen dosya cok kucuk veya bozuk. Lutfen daha sonra tekrar deneyin.");
             return;
         }
 
@@ -102,21 +102,21 @@ void Updater::downloadAndApplyUpdate(const QString &fileUrl) {
         QFile file(updateExePath);
         
         // Dosyayi yazma (WriteOnly) modunda olusturmayi deniyoruz (Klasor izinleri yetersiz olabilir, kontrol sart)
-        if (!file.open(QODevice::WriteOnly)) {
+        if (!file.open(QIODevice::WriteOnly)) {
             qDebug() << "Failed to create update.exe! Check folder permissions.";
             QMessageBox::critical(nullptr, "Erisim Hatasi", "Guncelleme dosyasi yazilamadi. Klasor yetkilerini kontrol edin.");
             return;
         }
-        // ndirilen veriyi update.exe'nin icine yaz ve dosyayi kapat
+        // Indirilen veriyi update.exe'nin icine yaz ve dosyayi kapat
         file.write(fileData);
         file.close(); 
 
-        // // --- UYGULAMAY YENLEME SUREC: BAT dosyasini olustur
+        // // --- UYGULAMAYI YENILEME SURECI: BAT dosyasini olustur
         // Uygulamanin kendi kendini silebilmesi icin gecici bir .bat dosyasi yazilir.
         QString batPath = QDir(appDir).filePath("update.bat");
         QFile bat(batPath);
         
-        if (bat.open(QODevice::WriteOnly | QODevice::Text)) {
+        if (bat.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream stream(&bat);
             
             QString winAppPath = appPath; winAppPath.replace("/", "\\");
@@ -125,11 +125,11 @@ void Updater::downloadAndApplyUpdate(const QString &fileUrl) {
             // BAT dosyasinin icine komutlari yaziyoruz:
             stream << "@echo off\r\n"                             // Konsolda yazilari gizle
                    << "cd /d \"" << winAppDir << "\"\r\n"         // Programin klasorune git
-                   << "timeout /t 2 /nobreak > nul\r\n"           // Programin tamamen kapanmasi icin 2 saniye bekle (ONEML!)
+                   << "timeout /t 2 /nobreak > nul\r\n"           // Programin tamamen kapanmasi icin 2 saniye bekle (ONEMLI!)
                    << "del /f /q \"" << winAppPath << "\"\r\n"    // Eski "CanBusSimulator.exe" dosyasini zorla sil
                    << "ren \"update.exe\" \"CanBusSimulator.exe\"\r\n" // Yeni inen "update.exe"nin adini "CanBusSimulator.exe" yap
                    << "start \"\" \"" << winAppPath << "\"\r\n"   // Yeni guncellenmis uygulamayi baslat
-                   << "del \"%~f0\"\r\n"                          // slem bitince bu BAT dosyasinin KEND KENDN SLMESN sagla
+                   << "del \"%~f0\"\r\n"                          // Islem bitince bu BAT dosyasinin KENDI KENDINI SILMESINI sagla
                    << "exit\r\n";                                 // Komut istemini kapat
             bat.close();
         }
