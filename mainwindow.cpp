@@ -1,3 +1,5 @@
+// Ana simülasyon döngüsünün (Fizik motoru, hýz/koordinat hesaplamalarý) ve kullanýcý arayüzü etkileþimlerinin gerçekleþtiði en temel dosyadýr.
+
 #include "mainwindow.h"
 #include "dbmanager.h"
 #include <QVBoxLayout>
@@ -541,4 +543,5 @@ void MainWindow::updateToggleButton(QPushButton* btn, bool state, const QString&
         btn->setStyleSheet(QString("background-color: %1; color: white; font-weight: bold;").arg(offColor));
     }
 }
+
 

@@ -1,3 +1,5 @@
+// Uygulamanın başlangıç noktası. Qt GUI (Arayüz) motorunu başlatır ve MainWindow (Ana Pencere) nesnesini ekrana çizer.
+
 // Projenin baÅŸlangÄ±Ã§ (giriÅŸ) dosyasÄ±dÄ±r.
 // Uygulama ilk buradan Ã§alÄ±ÅŸmaya baÅŸlar ve MainWindow (Ana Pencere) arayÃ¼zÃ¼nÃ¼ ekrana Ã§izer.
 #include <QApplication>

@@ -1,3 +1,5 @@
+// CAN veriyolu (DBC) dosyalarını parse eden (ayrıştıran), sinyal/mesaj kurallarını çıkartan asıl ayrıştırıcı mantık dosyasıdır.
+
 // dbcparser.cpp
 // Bu dosya, yÃ¼klenen DBC dosyalarÄ±nÄ± satÄ±r satÄ±r okuyan (parse eden) asÄ±l motor kÄ±smÄ±dÄ±r.
 // KarmaÅŸÄ±k Regex (DÃ¼zenli Ä°fadeler) kullanarak metin iÃ§indeki verileri ayÄ±klar.
@@ -182,3 +184,4 @@ QMap<uint32_t, DbcMessage> DbcParser::getMessages() const {
 bool DbcParser::isEmpty() const {
     return m_messages.isEmpty();
 }
+

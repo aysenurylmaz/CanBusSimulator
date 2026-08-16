@@ -1,3 +1,5 @@
+// Uzak sunucuya ba�lanarak versiyon kontrol� yapan ve gerekirse yeni g�ncellemeyi indirip kuran dosyad�r.
+
 // updater.cpp
 // İnternet üzerinden (veya yerel sunucudan) güncel sürümü kontrol etme,
 // indirme ve eski .exe dosyasını silip yenisini başlatma işlemlerini yapar.

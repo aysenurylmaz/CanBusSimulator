@@ -1,3 +1,5 @@
+// Veritabaný baðlantýlarýný ve sorgularýný yöneten DbManager sýnýfýnýn tanýmlamalarýný içerir.
+
 #ifndef DBMANAGER_H
 #define DBMANAGER_H
 
@@ -29,3 +31,4 @@ private slots:
 };
 
 #endif // DBMANAGER_H
+

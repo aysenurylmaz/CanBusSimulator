@@ -1,3 +1,5 @@
+// PostgreSQL veritabanýna CAN sinyallerini yazan ve dýþarýdan gelen (Web UI) komutlarý asenkron olarak dinleyen veritabaný yönetim dosyasýdýr.
+
 #include "dbmanager.h"
 #include <QSqlQuery>
 #include <QSqlError>
@@ -123,3 +125,4 @@ void DbManager::logSignal(const QString& messageId, const QString& signalName, d
         qDebug() << "Veritabanina yazma hatasi:" << query.lastError().text();
     }
 }
+
