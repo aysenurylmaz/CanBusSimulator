@@ -1,4 +1,4 @@
-// DBC dosyalar�n� okuyup anlamland�rmak i�in kullan�lan DbcParser s�n�f�n�n tan�mlamalar�n� i�erir.
+// DBC dosyalarini okuyup anlamlandirmak icin kullanilan DbcParser sinifinin tanimlamalarini icerir.
 
 // dbcparser.h
 // Bu dosya, DBC Parser sinifinin (class) tanimini (basliklarini) icerir.

@@ -1,4 +1,4 @@
-// PostgreSQL veritaban�na CAN sinyallerini yazan ve d��ar�dan gelen (Web UI) komutlar� asenkron olarak dinleyen veritaban� y�netim dosyas�d�r.
+// PostgreSQL veritabanina CAN sinyallerini yazan ve disaridan gelen (Web UI) komutlari asenkron olarak dinleyen veritabani yonetim dosyasidir.
 
 #include "dbmanager.h"
 #include <QSqlQuery>
@@ -22,17 +22,17 @@ DbManager::DbManager() {
     db.setPassword(settings.value("DatabasePass", "canbusadmin").toString());
     db.setPort(settings.value("DatabasePort", 5433).toInt());
     
-    // VeritabanÃ„Â± kapalÃ„Â±yken uygulamanÃ„Â±n donmasÃ„Â±nÃ„Â± (hang) engellemek iÃƒÂ§in baÃ„Å¸lantÃ„Â± zaman aÃ…Å¸Ã„Â±mÃ„Â± ekliyoruz
+    // VeritabanÃƒâ€Ã‚Â± kapalÃƒâ€Ã‚Â±yken uygulamanÃƒâ€Ã‚Â±n donmasÃƒâ€Ã‚Â±nÃƒâ€Ã‚Â± (hang) engellemek iÃƒÆ’Ã‚Â§in baÃƒâ€Ã…Â¸lantÃƒâ€Ã‚Â± zaman aÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â±mÃƒâ€Ã‚Â± ekliyoruz
     db.setConnectOptions("connect_timeout=2");
 }
-// Nesne yok edilirken (uygulama kapanÃ„Â±rken) veritabanÃ„Â± baÃ„Å¸lantÃ„Â±sÃ„Â±nÃ„Â± gÃƒÂ¼venli bir Ã…Å¸ekilde kapatÃ„Â±yoruz.
+// Nesne yok edilirken (uygulama kapanÃƒâ€Ã‚Â±rken) veritabanÃƒâ€Ã‚Â± baÃƒâ€Ã…Â¸lantÃƒâ€Ã‚Â±sÃƒâ€Ã‚Â±nÃƒâ€Ã‚Â± gÃƒÆ’Ã‚Â¼venli bir Ãƒâ€¦Ã…Â¸ekilde kapatÃƒâ€Ã‚Â±yoruz.
 DbManager::~DbManager() {
     if (db.isOpen()) {
         db.close();
     }
 }
-// Singleton (Tekil Nesne) TasarÃ„Â±m Deseni
-// Uygulama boyunca DbManager sÃ„Â±nÃ„Â±fÃ„Â±nÃ„Â±n sadece bir kez oluÃ…Å¸turulmasÃ„Â±nÃ„Â± ve her yerden aynÃ„Â± ÃƒÂ¶rneÃ„Å¸e (instance) eriÃ…Å¸ilmesini saÃ„Å¸lar.
+// Singleton (Tekil Nesne) TasarÃƒâ€Ã‚Â±m Deseni
+// Uygulama boyunca DbManager sÃƒâ€Ã‚Â±nÃƒâ€Ã‚Â±fÃƒâ€Ã‚Â±nÃƒâ€Ã‚Â±n sadece bir kez oluÃƒâ€¦Ã…Â¸turulmasÃƒâ€Ã‚Â±nÃƒâ€Ã‚Â± ve her yerden aynÃƒâ€Ã‚Â± ÃƒÆ’Ã‚Â¶rneÃƒâ€Ã…Â¸e (instance) eriÃƒâ€¦Ã…Â¸ilmesini saÃƒâ€Ã…Â¸lar.
 DbManager& DbManager::instance() {
     static DbManager _instance;
     return _instance;
@@ -42,25 +42,25 @@ bool DbManager::connectToDatabase() {
     if (db.isOpen()) return true;
 
     if (!db.open()) {
-        qDebug() << "Veritabani baÃ„Å¸lanti hatasi:" << db.lastError().text();
+        qDebug() << "Veritabani baÃƒâ€Ã…Â¸lanti hatasi:" << db.lastError().text();
         return false;
     }
     
-    qDebug() << "PostgreSQL veritabanina baÃ…Å¸ariyla baÃ„Å¸lanildi.";
+    qDebug() << "PostgreSQL veritabanina baÃƒâ€¦Ã…Â¸ariyla baÃƒâ€Ã…Â¸lanildi.";
 
-    // Postgres Trigger dinlemesi iÃƒÂ§in ayar yapÃ„Â±yoruz
+    // Postgres Trigger dinlemesi iÃƒÆ’Ã‚Â§in ayar yapÃƒâ€Ã‚Â±yoruz
     if (db.driver()->hasFeature(QSqlDriver::EventNotifications)) {
-        // VeritabanÃ„Â±ndan gelen bildirimleri onNotification fonksiyonuna baÃ„Å¸lÃ„Â±yoruz.
+        // VeritabanÃƒâ€Ã‚Â±ndan gelen bildirimleri onNotification fonksiyonuna baÃƒâ€Ã…Â¸lÃƒâ€Ã‚Â±yoruz.
         connect(db.driver(), &QSqlDriver::notification, this, &DbManager::onNotification);
         db.driver()->subscribeToNotification("device_commands_channel");
         qDebug() << "Subscribed to device_commands_channel";
     } else {
-        qDebug() << "Bu veritabanÃ„Â± sÃƒÂ¼rÃƒÂ¼cÃƒÂ¼sÃƒÂ¼ Event Notifications (LISTEN/NOTIFY) desteklemiyor!";
+        qDebug() << "Bu veritabanÃƒâ€Ã‚Â± sÃƒÆ’Ã‚Â¼rÃƒÆ’Ã‚Â¼cÃƒÆ’Ã‚Â¼sÃƒÆ’Ã‚Â¼ Event Notifications (LISTEN/NOTIFY) desteklemiyor!";
     }
 
     return true;
 }
-// VeritabanÃ„Â±ndan (PostgreSQL NOTIFY) bir bildirim geldiÃ„Å¸inde tetiklenen fonksiyon.
+// VeritabanÃƒâ€Ã‚Â±ndan (PostgreSQL NOTIFY) bir bildirim geldiÃƒâ€Ã…Â¸inde tetiklenen fonksiyon.
 void DbManager::onNotification(const QString& name, QSqlDriver::NotificationSource source, const QVariant& payload) {
     if (name == "device_commands_channel") {
         qDebug() << "Notification received from DB:" << payload.toString();
@@ -92,17 +92,17 @@ void DbManager::onNotification(const QString& name, QSqlDriver::NotificationSour
         }
     }
 }
-// Toplu veri eklemeleri (ÃƒÂ¶rn: saniyede yÃƒÂ¼zlerce CAN Bus sinyali) iÃƒÂ§in performansÃ„Â± artÃ„Â±rmak adÃ„Â±na Transaction baÃ…Å¸latÃ„Â±r.
+// Toplu veri eklemeleri (ÃƒÆ’Ã‚Â¶rn: saniyede yÃƒÆ’Ã‚Â¼zlerce CAN Bus sinyali) iÃƒÆ’Ã‚Â§in performansÃƒâ€Ã‚Â± artÃƒâ€Ã‚Â±rmak adÃƒâ€Ã‚Â±na Transaction baÃƒâ€¦Ã…Â¸latÃƒâ€Ã‚Â±r.
 bool DbManager::transaction() {
     if (!db.isOpen() && !connectToDatabase()) return false;
     return db.transaction();
 }
-// Transaction iÃƒÂ§indeki tÃƒÂ¼m iÃ…Å¸lemleri hata yoksa tek seferde veritabanÃ„Â±na kalÃ„Â±cÃ„Â± olarak yazar (kaydeder).
+// Transaction iÃƒÆ’Ã‚Â§indeki tÃƒÆ’Ã‚Â¼m iÃƒâ€¦Ã…Â¸lemleri hata yoksa tek seferde veritabanÃƒâ€Ã‚Â±na kalÃƒâ€Ã‚Â±cÃƒâ€Ã‚Â± olarak yazar (kaydeder).
 bool DbManager::commit() {
     if (!db.isOpen()) return false;
     return db.commit();
 }
-// CAN Bus ÃƒÂ¼zerinden ÃƒÂ§ÃƒÂ¶zÃƒÂ¼mlenmiÃ…Å¸ (parse edilmiÃ…Å¸) telemetri verilerini veritabanÃ„Â±na kaydeder.
+// CAN Bus ÃƒÆ’Ã‚Â¼zerinden ÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â¶zÃƒÆ’Ã‚Â¼mlenmiÃƒâ€¦Ã…Â¸ (parse edilmiÃƒâ€¦Ã…Â¸) telemetri verilerini veritabanÃƒâ€Ã‚Â±na kaydeder.
 void DbManager::logSignal(const QString& messageId, const QString& signalName, double physicalValue, const QString& rawHex) {
     if (!db.isOpen() && !connectToDatabase()) {
         return;

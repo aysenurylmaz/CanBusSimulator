@@ -1,4 +1,4 @@
-// Uygulaman�n ba�lang�� noktas�. Qt GUI (Aray�z) motorunu ba�lat�r ve MainWindow (Ana Pencere) nesnesini ekrana �izer.
+// Uygulamanin baslangic noktasi. Qt GUI (Arayuz) motorunu baslatir ve MainWindow (Ana Pencere) nesnesini ekrana cizer.
 
 // Projenin baslangic (giris) dosyasidir.
 // Uygulama ilk buradan calismaya baslar ve MainWindow (Ana Pencere) arayuzunu ekrana cizer.

@@ -1,4 +1,4 @@
-// Uygulaman�n kendini otomatik g�ncelleyebilmesi i�in gereken Updater s�n�f�n�n tan�mlamalar�.
+// Uygulamanin kendini otomatik guncelleyebilmesi icin gereken Updater sinifinin tanimlamalari.
 
 // updater.h
 // Bu dosya, uygulamanin kendi kendini guncellemesini (OTA - Over The Air Update) 

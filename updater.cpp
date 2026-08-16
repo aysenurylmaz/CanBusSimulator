@@ -1,4 +1,4 @@
-// Uzak sunucuya ba�lanarak versiyon kontrol� yapan ve gerekirse yeni g�ncellemeyi indirip kuran dosyad�r.
+// Uzak sunucuya baglanarak versiyon kontrolu yapan ve gerekirse yeni guncellemeyi indirip kuran dosyadir.
 
 // updater.cpp
 // Internet uzerinden (veya yerel sunucudan) guncel surumu kontrol etme,

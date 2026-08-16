@@ -1,4 +1,4 @@
-// MainWindow s�n�f�n�n tan�mlamalar�. UI bile�enleri, timer'lar ve fizik/ara� sim�lasyonu mant���na ait fonksiyon imzalar�n� bar�nd�r�r.
+// MainWindow sinifinin tanimlamalari. UI bilesenleri, timer'lar ve fizik/arac simulasyonu mantigina ait fonksiyon imzalarini barindirir.
 
 // mainwindow.h
 // Kullanici arayuzunun (UI) baslik dosyasidir. Arayuzdeki butonlarin, 

@@ -1,4 +1,4 @@
-// Ana sim�lasyon d�ng�s�n�n (Fizik motoru, h�z/koordinat hesaplamalar�) ve kullan�c� aray�z� etkile�imlerinin ger�ekle�ti�i en temel dosyad�r.
+// Ana simulasyon dongusunun (Fizik motoru, hiz/koordinat hesaplamalari) ve kullanici arayuzu etkilesimlerinin gerceklestigi en temel dosyadir.
 
 #include "mainwindow.h"
 #include "dbmanager.h"
@@ -14,7 +14,7 @@
 #include <QProcess>
 
 
-    // Aray�z� (UI) kuran, Timer'lar� ba�latan ve temel de�i�kenleri s�f�rlayan kurucu fonksiyon (Constructor).
+    // Arayï¿½zï¿½ (UI) kuran, Timer'larï¿½ baï¿½latan ve temel deï¿½iï¿½kenleri sï¿½fï¿½rlayan kurucu fonksiyon (Constructor).
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), isHeadlightsOn(false), isDoor1Open(false), isDoor2Open(false), isHvacOn(false), motorTemp(25.0), inverterTemp(25.0), currentSpeed(0.0), frameTickCounter(0), currentRouteIndex(0), currentLat(0.0), currentLng(0.0), totalRemainingDistance(0.0), etaSeconds(0.0) {
     dbcParser = new DbcParser();
     networkManager = new QNetworkAccessManager(this);
@@ -183,7 +183,7 @@ void MainWindow::packSignal(QByteArray &frame, const DbcSignal &sig, uint64_t ra
 }
 
 
-    // Fizik motorunda hesaplanan ara� verilerini (h�z, konum) DBC dosyas�na g�re CAN frame'lerine �evirip veritaban�na basar.
+    // Fizik motorunda hesaplanan araï¿½ verilerini (hï¿½z, konum) DBC dosyasï¿½na gï¿½re CAN frame'lerine ï¿½evirip veritabanï¿½na basar.
 void MainWindow::generateCanFrame() {
     canMonitor->clear();
     
@@ -365,7 +365,7 @@ void MainWindow::generateCanFrame() {
 }
 
 
-    // Fizik motorunun ana d�ng�s�: H�z, mesafe, batarya t�ketimi ve motor s�cakl�k de�i�imlerini 50ms'de bir hesaplar.
+    // Fizik motorunun ana dï¿½ngï¿½sï¿½: Hï¿½z, mesafe, batarya tï¿½ketimi ve motor sï¿½caklï¿½k deï¿½iï¿½imlerini 50ms'de bir hesaplar.
 void MainWindow::physicsLoop() {
     currentSpeed = speedSlider->value();
     if (isHandbrakeOn && currentSpeed > 0) {

@@ -1,4 +1,4 @@
-// Veritabaný baðlantýlarýný ve sorgularýný yöneten DbManager sýnýfýnýn tanýmlamalarýný içerir.
+// Veritabani baglantilarini ve sorgularini yoneten DbManager sinifinin tanimlamalarini icerir.
 
 #ifndef DBMANAGER_H
 #define DBMANAGER_H

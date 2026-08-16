@@ -1,4 +1,4 @@
-// CAN veriyolu (DBC) dosyalar�n� parse eden (ayr��t�ran), sinyal/mesaj kurallar�n� ��kartan as�l ayr��t�r�c� mant�k dosyas�d�r.
+// CAN veriyolu (DBC) dosyalarini parse eden (ayristiran), sinyal/mesaj kurallarini cikartan asil ayristirici mantik dosyasidir.
 
 // dbcparser.cpp
 // Bu dosya, yuklenen DBC dosyalarini satir satir okuyan (parse eden) asil motor kismidir.
