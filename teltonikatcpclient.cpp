@@ -1,11 +1,17 @@
 #include "teltonikatcpclient.h"
 #include <QDebug>
+#include <QTimer>
 
 TeltonikaTcpClient::TeltonikaTcpClient(QObject *parent)
-    : QObject(parent)
+    : QObject(parent), targetPort(0)
 {
     // C++ uzerinde yeni bir QTcpSocket objesi yaratiyoruz (Memory allocation).
     socket = new QTcpSocket(this);
+
+    // Otomatik yeniden baglanma icin Timer
+    reconnectTimer = new QTimer(this);
+    reconnectTimer->setInterval(3000); // 3 saniyede bir dene
+    connect(reconnectTimer, &QTimer::timeout, this, &TeltonikaTcpClient::attemptReconnect);
 
     // Qt'nin Signal/Slot mimarisi (Olay gudumlu programlama):
     // Socket'in arkasinda bir seyler oldugunda (mesaj geldiginde, baglanildiginda, hata ciktiginda)
@@ -17,6 +23,9 @@ TeltonikaTcpClient::TeltonikaTcpClient(QObject *parent)
     
     // Baglanti gerceklestiginde onConnected calissin:
     connect(socket, &QTcpSocket::connected, this, &TeltonikaTcpClient::onConnected);
+
+    // Baglanti koptugunda
+    connect(socket, &QTcpSocket::disconnected, this, &TeltonikaTcpClient::onClientDisconnected);
 
 // Qt5 ve Qt6 arasindaki sinyal isimlendirme farkliliklarini (Geriye donuk uyumluluk) cozmek icin 
 // ufak bir preprocessor (#if) hilesi kullaniyoruz:
@@ -35,10 +44,29 @@ TeltonikaTcpClient::~TeltonikaTcpClient()
 
 void TeltonikaTcpClient::connectToServer(const QString& ip, quint16 port)
 {
+    targetIp = ip;
+    targetPort = port;
+    
     // Eger su an bir baglanti yoksa, yeni bir baglanti talebi yolla (Asenkron).
     if (socket->state() == QAbstractSocket::UnconnectedState) {
-        qDebug() << "[TeltonikaTcpClient] Sunucuya baglaniliyor:" << ip << ":" << port;
-        socket->connectToHost(ip, port);
+        qDebug() << "[TeltonikaTcpClient] Sunucuya baglaniliyor:" << targetIp << ":" << targetPort;
+        socket->connectToHost(targetIp, targetPort);
+    }
+}
+
+void TeltonikaTcpClient::attemptReconnect()
+{
+    if (socket->state() == QAbstractSocket::UnconnectedState && targetPort != 0) {
+        qDebug() << "[TeltonikaTcpClient] Sunucuya yeniden baglanmayi deniyor...";
+        socket->connectToHost(targetIp, targetPort);
+    }
+}
+
+void TeltonikaTcpClient::onClientDisconnected()
+{
+    qDebug() << "[TeltonikaTcpClient] Sunucu baglantisi koptu! Yeniden baglanma dongusu baslatiliyor...";
+    if (!reconnectTimer->isActive()) {
+        reconnectTimer->start();
     }
 }
 
@@ -48,7 +76,7 @@ void TeltonikaTcpClient::sendData(const QByteArray& packet)
     if (socket->state() == QAbstractSocket::ConnectedState) {
         qDebug() << "[TeltonikaTcpClient] Codec 8 Paketi sunucuya gonderiliyor. Boyut:" << packet.size() << "byte.";
         
-        // Soketin (Borunun) icine bytelari dokuyoruz.
+        // Soketin icine bytelari dokuyoruz.
         socket->write(packet);
         
         // Cok hizli ve sik gonderimlerde veriler siraya (buffer) takilmasin diye,
@@ -61,7 +89,8 @@ void TeltonikaTcpClient::sendData(const QByteArray& packet)
 
 void TeltonikaTcpClient::disconnectFromServer()
 {
-    // Aciksa soketi nazikce kapat.
+    reconnectTimer->stop();
+    // Aciksa soketi kapat.
     if (socket->isOpen()) {
         socket->close();
     }
@@ -92,12 +121,20 @@ void TeltonikaTcpClient::onReadyRead()
 
 void TeltonikaTcpClient::onConnected()
 {
-    qDebug() << "[TeltonikaTcpClient] Sunucuya basariyla el sikisildi (Handshake bitti)! Veri gonderimine haziriz.";
+    qDebug() << "[TeltonikaTcpClient] Handshake bitti! Veri gonderimine haziriz.";
+    if (reconnectTimer->isActive()) {
+        reconnectTimer->stop();
+    }
 }
 
 void TeltonikaTcpClient::onErrorOccurred(QAbstractSocket::SocketError socketError)
 {
     // Sunucu cokmus olabilir, internetimiz kesilmis olabilir, IP yanlis olabilir.
-    // Qt'nin urettigi hazir insan-okunabilir hata mesajini konsola basiyoruz.
+    // Qt'nin urettigi hazir hata mesajini konsola basiyoruz.
     qDebug() << "[TeltonikaTcpClient] SOKET HATASI OLUSTU:" << socket->errorString();
+    
+    // Baglanti basarisiz olursa timer'i baslatarak tekrar denemeyi sagla
+    if (!reconnectTimer->isActive() && targetPort != 0) {
+        reconnectTimer->start();
+    }
 }

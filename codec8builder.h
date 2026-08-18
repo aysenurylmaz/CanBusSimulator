@@ -3,6 +3,7 @@
 
 #include <QByteArray>
 #include <QDateTime>
+#include <QMap>
 
 // Teltonika FMC650 (ve benzeri) donanimlarin kullandigi "Codec 8" protokolunu
 // C++ tarafinda simule etmemizi saglayan ana siniftir (Class).
@@ -13,9 +14,10 @@ class Codec8Builder
 public:
     Codec8Builder();
 
-    // Bu fonksiyon en onemli gorevi ustlenir. 
-    // Disaridan aldigi ham 8-bytelik CAN verisini (payload), gercek GPS koordinatlarini
-    // ve cihazdaki "Property ID" degerini (varsayilan 145) kullanarak gecerli bir Codec 8 paketi olusturur.
+    // Yeni nesil Coklu CAN destekleyen fonksiyon (Birden fazla 8-byte payload gonderebilir).
+    QByteArray buildPacket(const QMap<quint8, QByteArray>& ioElements, double lat = 0.0, double lng = 0.0, double speed = 0.0);
+
+    // Geriye donuk uyumluluk (Kodu bozmamak icin tekil payload alan eski fonksiyon)
     QByteArray buildPacket(const QByteArray& payload, quint16 propertyId = 145, double lat = 0.0, double lng = 0.0, double speed = 0.0);
 
 private:

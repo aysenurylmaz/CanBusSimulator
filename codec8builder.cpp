@@ -4,7 +4,7 @@ Codec8Builder::Codec8Builder()
 {
 }
 
-QByteArray Codec8Builder::buildPacket(const QByteArray& payload, quint16 propertyId, double lat, double lng, double speed)
+QByteArray Codec8Builder::buildPacket(const QMap<quint8, QByteArray>& ioElements, double lat, double lng, double speed)
 {
     // Teltonika Codec 8 paket mimarisi 4 ana asmadan olusur:
     // 1. Preamble (4 byte)          : Paketin baslangicini belirten sifirlar (0x00000000).
@@ -19,75 +19,55 @@ QByteArray Codec8Builder::buildPacket(const QByteArray& payload, quint16 propert
     // ----------------------------------------------------
     
     // Codec ID = 0x08
-    // Teltonika cihazlari bircok codec destekler (Codec 8, Codec 8 Extended, Codec 16 vs.)
-    // Biz standart Codec 8 (0x08) kullaniyoruz.
     appendUInt8(avlData, 0x08);
 
     // Number of Data 1 (Kac tane kayit var?)
-    // Ayni paket icinde birden fazla log gonderebiliriz. Biz tek bir CAN mesaji yolladigimiz icin 1 yaziyoruz.
     appendUInt8(avlData, 0x01);
 
     // Timestamp (8 byte)
-    // Olayin (logun) tam olarak ne zaman gerceklestigi. 
-    // UTC saat diliminde ve milisaniye (ms) cinsinden hesaplanir.
     quint64 currentTimestamp = QDateTime::currentMSecsSinceEpoch();
     appendUInt64(avlData, currentTimestamp);
 
     // Priority (1 byte)
-    // 0: Low (Dusuk Oncelik)
-    // 1: High (Yuksek Oncelik)
-    // 2: Panic (Panik/Acil Durum Onceligi)
-    // CAN mesajlari genelde rutin veri oldugu icin Low (0x00) seciyoruz.
     appendUInt8(avlData, 0x00);
 
     // GPS Elementleri (Toplam 15 byte zorunlu)
-    // Gonderilen her verinin yaninda cihaz o anki GPS konumunu da yollar.
-    // Longitude ve Latitude degerleri gercek derece degerlerinin 10.000.000 (10^7) ile carpilmis halidir.
-    // Teltonika cihazi koordinatlari integer (tamsayi) formatinda kabul eder.
     appendUInt32(avlData, static_cast<quint32>(lng * 10000000.0)); // Guncel Longitude (x 10^7)
     appendUInt32(avlData, static_cast<quint32>(lat * 10000000.0)); // Guncel Latitude  (x 10^7)
-    appendUInt16(avlData, 100);       // Altitude (Deniz seviyesinden yukseklik - varsayilan 100 metre)
-    appendUInt16(avlData, 0);         // Angle (Yon acisi - 0 derece)
-    appendUInt8(avlData, 15);         // Satellites (Kac uyduya bagli - 15 uydu varsayilan)
-    appendUInt16(avlData, static_cast<quint16>(speed)); // Speed (Aracin hizi - km/h)
+    appendUInt16(avlData, 100);       // Altitude
+    appendUInt16(avlData, 0);         // Angle
+    appendUInt8(avlData, 15);         // Satellites
+    appendUInt16(avlData, static_cast<quint16>(speed)); // Speed
 
-    // IO Elements Blogu (Burasi Manual CAN verilerimizin girdigi yerdir)
-    // IO demek (Input/Output), sensor veya CAN verileri demek.
-    
+    // IO Elements Blogu
     // Event IO ID (1 byte)
-    // Bu paketin olusmasina hangi parametre sebep oldu? 0 verisek sadece periyodik log demektir.
     appendUInt8(avlData, 0x00);
     
     // Total IO Elements Count (1 byte)
-    // Toplamda kac tane parametre (IO) yolluyoruz? Cevap: Sadece 1 tane (O da bizim 8-bytelik CAN)
-    appendUInt8(avlData, 0x01); 
+    appendUInt8(avlData, static_cast<quint8>(ioElements.size())); 
 
     // Codec 8 standardinda veriler boyutuna gore gruplanir (1-byte, 2-byte, 4-byte, 8-byte).
-    // Bizim CAN mesajimiz (payload) tam 8 byte oldugu icin, ilk gruplari 0 geciyoruz.
     appendUInt8(avlData, 0x00); // 1-Byte veri sayisi: 0
     appendUInt8(avlData, 0x00); // 2-Byte veri sayisi: 0
     appendUInt8(avlData, 0x00); // 4-Byte veri sayisi: 0
     
-    // 8-Byte veri sayisi: 1 (İste bizim verimiz burada basliyor)
-    appendUInt8(avlData, 0x01); 
+    // 8-Byte veri sayisi
+    appendUInt8(avlData, static_cast<quint8>(ioElements.size())); 
 
-    // ID degeri (Property ID)
-    // Teltonika tarafinda bu verinin ne anlama geldigini (ornek: Motor Devri mi? Yag sicakligi mi?)
-    // bu ID (145 vb.) belirler. Codec 8'de ID degeri 1 Byte sinirlidir (0-255 arasi).
-    appendUInt8(avlData, static_cast<quint8>(propertyId));
+    // Dongu ile tum 8-bytelik IO'lari (CAN mesajlarini) ekle
+    for (auto it = ioElements.begin(); it != ioElements.end(); ++it) {
+        // ID degeri (Property ID)
+        appendUInt8(avlData, it.key());
 
-    // CAN Payload'ini kopyala (Tam 8 byte olmak zorundadir)
-    // Eger 8'den kucukse eksik kismi sifirlarla (0x00) dolduruyoruz ki sunucu hata vermesin.
-    QByteArray finalPayload = payload;
-    while(finalPayload.size() < 8) {
-        finalPayload.append('\0');
+        // CAN Payload'ini kopyala (Tam 8 byte olmak zorundadir)
+        QByteArray finalPayload = it.value();
+        if (finalPayload.size() < 8) {
+            finalPayload.resize(8); // Eksik kisimlari 0x00 (null byte) ile doldurur.
+        }
+        avlData.append(finalPayload.left(8));
     }
-    // Geri kalan kismi kesip tam 8 bytelik kismi ekliyoruz.
-    avlData.append(finalPayload.left(8));
 
     // Number of Data 2
-    // En basta belirttigimiz Number of Data 1 ile birebir AYNISI olmak zorundadir.
-    // Teltonika sunucusu bu iki degeri karsilastirarak pakette kayip var mi diye bakar.
     appendUInt8(avlData, 0x01);
 
     // ----------------------------------------------------
@@ -95,27 +75,29 @@ QByteArray Codec8Builder::buildPacket(const QByteArray& payload, quint16 propert
     // ----------------------------------------------------
     QByteArray finalPacket;
 
-    // 1. Preamble (4 byte: 0x00000000) (Zorunlu Baslangic İnsasi)
+    // 1. Preamble (4 byte: 0x00000000)
     appendUInt32(finalPacket, 0x00000000);
 
     // 2. Data Field Length (4 byte)
-    // Data blogunun byte cinsinden uzunlugunu ekliyoruz (avlData dizisinin boyutu).
     appendUInt32(finalPacket, static_cast<quint32>(avlData.size()));
 
     // 3. AVL Data Blogunun kendisi
     finalPacket.append(avlData);
 
     // 4. CRC-16 Hesaplamasi ve Eklenmesi (2 byte)
-    // Dikkat: CRC sadece Data Field (avlData) uzerinden hesaplanir. 
-    // Preamble ve Data Length bu hesaba DAHIL EDILMEZ.
     quint16 crc = calculateCrc16(avlData);
-    
-    // Codec 8 formatinda CRC degeri 4 byte'lik bir alan kaplar ancak degeri 2 Byte (CRC-16)'dir.
-    // Bu yuzden 4 byte alan ayirip, ilk iki byte'ini 00 00 seklinde bos geciyoruz. (Big-Endian sebebiyle)
     appendUInt32(finalPacket, static_cast<quint32>(crc)); 
 
     return finalPacket;
 }
+
+QByteArray Codec8Builder::buildPacket(const QByteArray& payload, quint16 propertyId, double lat, double lng, double speed)
+{
+    QMap<quint8, QByteArray> ioElements;
+    ioElements[static_cast<quint8>(propertyId)] = payload;
+    return buildPacket(ioElements, lat, lng, speed);
+}
+
 
 // ----------------------------------------------------
 // CRC-16 (IBM/ARC) ALGORITMASI (POLYNOMIAL: 0xA001)

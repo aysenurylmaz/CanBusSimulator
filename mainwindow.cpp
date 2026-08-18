@@ -14,12 +14,18 @@
 #include <QProcess>
 #include "teltonikatcpclient.h"
 #include "codec8builder.h"
+#include <QSettings>
+#include <QFile>
+#include <QEventLoop>
 
     // Arayuzu (UI) kuran, Timer'lari baslatan ve temel degiskenleri sifirlayan kurucu fonksiyon (Constructor).
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), isHeadlightsOn(false), isDoor1Open(false), isDoor2Open(false), isHvacOn(false), motorTemp(25.0), inverterTemp(25.0), currentSpeed(0.0), frameTickCounter(0), currentRouteIndex(0), currentLat(0.0), currentLng(0.0), totalRemainingDistance(0.0), etaSeconds(0.0) {
     dbcParser = new DbcParser();
     networkManager = new QNetworkAccessManager(this);
-    QFile file("C:/Projeler/CanBusWebPlatform/Shared/parsed_dbc.json");
+    
+    QSettings settings("config.ini", QSettings::IniFormat);
+    QString exportPath = settings.value("DbcExportPath", "C:/Projeler/CanBusWebPlatform/Shared/parsed_dbc.json").toString();
+    QFile file(exportPath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         file.write("[]");
         file.close();
@@ -50,7 +56,31 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), 
 }
 
 MainWindow::~MainWindow() {
+    // Uygulama kapandiginda (Guvenlik sebebiyle) paylasilan DBC JSON dosyasini sifirliyoruz.
+    // Boylece ana uygulama kapaliyken web tarafinda (frontend) eski (hayalet) veriler gorunmez.
+    QSettings settings("config.ini", QSettings::IniFormat);
+    QString exportPath = settings.value("DbcExportPath", "C:/Projeler/CanBusWebPlatform/Shared/parsed_dbc.json").toString();
+    QFile file(exportPath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        file.write("[]");
+        file.close();
+    }
+
+    // Backend'i aninda haberdar et ki frontend'deki sag paneli (DBC Explorer) silsin
+    QNetworkRequest request(QUrl("http://127.0.0.1:5085/api/dbc/reload"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    QNetworkReply *reply = networkManager->post(request, QByteArray("{}"));
+    
+    QEventLoop loop;
+    connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    // Programin sonsuza kadar takili kalmamasi icin 1 saniyelik zaman asimi ekliyoruz
+    QTimer::singleShot(1000, &loop, &QEventLoop::quit); 
+    loop.exec();
+    reply->deleteLater();
+
     delete dbcParser;
+    delete networkManager;
+    delete teltonikaClient;
 }
 
 // Kullanici arayuzundeki buton, slider, ve gostergeleri olusturan ve ana pencereye yerlestiren ana tasarim (UI) fonksiyonu.
@@ -262,7 +292,7 @@ void MainWindow::generateCanFrame() {
     bool speedFound, batteryFound, handbrakeFound, headlightsFound;
     bool door1Found, door2Found, hvacFound, motorTempFound, inverterTempFound;
 
-    // Birden fazla benzer sinyal bulunma ihtimaline karsi (Battery flooding) sadece ilk bulunan sinyali dikkate al.
+    // Birden fazla benzer sinyal bulunma ihtimaline karsi sadece ilk bulunan sinyali dikkate al.
     DbcSignal speedSig = dbcParser->findSignalByKeywords({"CCVS_WheelBasedSpeed", "Vehicle_Speed", "CCVS", "Speed", "Spd"}, speedFound);
     DbcSignal batterySig = dbcParser->findSignalByKeywords({"SOC", "GenericStateofCharge", "Battery_Level", "Battery", "Bat", "Charge"}, batteryFound);
     DbcSignal handbrakeSig = dbcParser->findSignalByKeywords({"CCVS_ParkingBrakeStatus", "FMS1_ParkingBrake", "Hand_Brake", "Brake", "Hand", "Park"}, handbrakeFound);
@@ -377,6 +407,9 @@ void MainWindow::generateCanFrame() {
     if (frameTickCounter == 0) {
         // DBC yuklu olsun veya olmasin, sunucuya (backend'e) her zaman ayni standart (8-byte) veriyi yollariz.
         // Bu sayede backend tarafi dinamik DBC formatlariyla ugrasmak zorunda kalmaz, sabit formati cozer.
+        
+        QMap<quint8, QByteArray> ioElements;
+
         QByteArray fmsData(8, 0);
         fmsData[0] = isHandbrakeOn ? 0x01 : 0x00;
         fmsData[1] = static_cast<unsigned char>(batterySlider->value());
@@ -385,10 +418,25 @@ void MainWindow::generateCanFrame() {
         fmsData[3] = (speed >> 8) & 0xFF;
         fmsData[4] = isHeadlightsOn ? 0x01 : 0x00;
         // Kalan 3 byte (5, 6, 7) su an icin 0x00 (Ileride eklenebilir).
+        ioElements[145] = fmsData;
+        
+        // Yeni eklenen Kapi, Klima ve Sicaklik verilerini iceren ikinci CAN mesaji (ID: 146)
+        QByteArray extraData(8, 0);
+        extraData[0] = isDoor1Open ? 0x01 : 0x00;
+        extraData[1] = isDoor2Open ? 0x01 : 0x00;
+        extraData[2] = isHvacOn ? 0x01 : 0x00;
+        extraData[3] = static_cast<quint8>(motorTemp);
+        extraData[4] = static_cast<quint8>(inverterTemp);
+        ioElements[146] = extraData;
 
         Codec8Builder builder;
-        QByteArray codec8Packet = builder.buildPacket(fmsData, 145, currentLat, currentLng, currentSpeed);
-        teltonikaClient->sendData(codec8Packet);
+        QByteArray codec8Packet = builder.buildPacket(ioElements, currentLat, currentLng, currentSpeed);
+        
+        // Eger guncel bir GPS konumu yoksa (0.0), haritanin 'Null Island'a veya 
+        // default olarak Istanbul'a sicramasini engellemek icin Teltonika'ya packet atmiyoruz.
+        if (currentLat != 0.0 && currentLng != 0.0) {
+            teltonikaClient->sendData(codec8Packet);
+        }
     }
 
     DbManager::instance().commit();

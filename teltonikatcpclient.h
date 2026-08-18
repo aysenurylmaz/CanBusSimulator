@@ -40,9 +40,19 @@ private slots:
     // soketin firlattigi "Hata" sinyalini yakalayip konsola (qDebug) yazdiran fonksiyondur.
     void onErrorOccurred(QAbstractSocket::SocketError socketError);
 
+    void onClientDisconnected();
+    void attemptReconnect();
+
 private:
     // Arkada calisan gercek Qt soket objesinin (Pointer) referansidir.
     QTcpSocket* socket;
+    
+    // Otomatik yeniden baglanma (auto-reconnect) islemleri icin Timer.
+    class QTimer* reconnectTimer;
+    
+    // Baglanilmaya calisilan hedef IP ve Port bilgileri.
+    QString targetIp;
+    quint16 targetPort;
 };
 
 #endif // TELTONIKATCPCLIENT_H

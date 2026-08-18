@@ -11,6 +11,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QSettings>
 
 DbcParser::DbcParser() {
 }
@@ -100,7 +101,9 @@ bool DbcParser::parseFile(const QString &filePath) {
     file.close();
     
     // Senkronizasyon icin dosyayi JSON formatinda Web'in okudugu Shared klasorune aktariyoruz
-    exportToJson("C:/Projeler/CanBusWebPlatform/Shared/parsed_dbc.json");
+    QSettings settings("config.ini", QSettings::IniFormat);
+    QString exportPath = settings.value("DbcExportPath", "C:/Projeler/CanBusWebPlatform/Shared/parsed_dbc.json").toString();
+    exportToJson(exportPath);
     
     return true;
 }
