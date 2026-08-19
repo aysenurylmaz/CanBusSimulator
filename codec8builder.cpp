@@ -98,6 +98,74 @@ QByteArray Codec8Builder::buildPacket(const QByteArray& payload, quint16 propert
     return buildPacket(ioElements, lat, lng, speed);
 }
 
+QByteArray Codec8Builder::buildExtendedPacket(const QMap<quint16, QByteArray>& ioElements, double lat, double lng, double speed)
+{
+    QByteArray avlData;
+
+    // Codec ID = 0x8E (Codec 8 Extended)
+    appendUInt8(avlData, 0x8E);
+
+    // Number of Data 1
+    appendUInt8(avlData, 0x01);
+
+    // Timestamp (8 byte)
+    quint64 currentTimestamp = QDateTime::currentMSecsSinceEpoch();
+    appendUInt64(avlData, currentTimestamp);
+
+    // Priority (1 byte)
+    appendUInt8(avlData, 0x00);
+
+    // GPS Elementleri (Toplam 15 byte zorunlu)
+    appendUInt32(avlData, static_cast<quint32>(lng * 10000000.0));
+    appendUInt32(avlData, static_cast<quint32>(lat * 10000000.0));
+    appendUInt16(avlData, 100);
+    appendUInt16(avlData, 0);
+    appendUInt8(avlData, 15);
+    appendUInt16(avlData, static_cast<quint16>(speed));
+
+    // IO Elements Blogu - Codec 8 Extended
+    // Event IO ID (2 bytes)
+    appendUInt16(avlData, 0x0000);
+    
+    // Total IO Elements Count (2 bytes)
+    appendUInt16(avlData, static_cast<quint16>(ioElements.size())); 
+
+    // N of 1-Byte (2 bytes)
+    appendUInt16(avlData, 0x0000);
+    // N of 2-Byte (2 bytes)
+    appendUInt16(avlData, 0x0000);
+    // N of 4-Byte (2 bytes)
+    appendUInt16(avlData, 0x0000);
+    // N of 8-Byte (2 bytes)
+    appendUInt16(avlData, static_cast<quint16>(ioElements.size())); 
+
+    for (auto it = ioElements.begin(); it != ioElements.end(); ++it) {
+        // ID degeri (Property ID) -> 2 bytes in Extended
+        appendUInt16(avlData, it.key());
+
+        QByteArray finalPayload = it.value();
+        if (finalPayload.size() < 8) {
+            finalPayload.resize(8);
+        }
+        avlData.append(finalPayload.left(8));
+    }
+
+    // N of X-Byte (2 bytes)
+    appendUInt16(avlData, 0x0000); 
+
+    // Number of Data 2
+    appendUInt8(avlData, 0x01);
+
+    QByteArray finalPacket;
+    appendUInt32(finalPacket, 0x00000000);
+    appendUInt32(finalPacket, static_cast<quint32>(avlData.size()));
+    finalPacket.append(avlData);
+    quint16 crc = calculateCrc16(avlData);
+    appendUInt32(finalPacket, static_cast<quint32>(crc)); 
+
+    return finalPacket;
+}
+
 
 // ----------------------------------------------------
 // CRC-16 (IBM/ARC) ALGORITMASI (POLYNOMIAL: 0xA001)

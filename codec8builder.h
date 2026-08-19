@@ -17,6 +17,9 @@ public:
     // Yeni nesil Coklu CAN destekleyen fonksiyon (Birden fazla 8-byte payload gonderebilir).
     QByteArray buildPacket(const QMap<quint8, QByteArray>& ioElements, double lat = 0.0, double lng = 0.0, double speed = 0.0);
 
+    // Codec 8 Extended formatini destekleyen yeni fonksiyon (quint16 Property ID'leri kullanir)
+    QByteArray buildExtendedPacket(const QMap<quint16, QByteArray>& ioElements, double lat = 0.0, double lng = 0.0, double speed = 0.0);
+
     // Geriye donuk uyumluluk (Kodu bozmamak icin tekil payload alan eski fonksiyon)
     QByteArray buildPacket(const QByteArray& payload, quint16 propertyId = 145, double lat = 0.0, double lng = 0.0, double speed = 0.0);
 

@@ -80,9 +80,11 @@ private:
     double currentSpeed;
     
     QMap<QString, double> lastLoggedValues;
+    QMap<uint32_t, quint16> canToPropertyIdMap;
     int frameTickCounter;
     
     void setupUi();
+    void loadCompanyJsonConfig();
     void packSignal(QByteArray &frame, const DbcSignal &sig, uint64_t value);
     void exportDbcToJson(const QString& outputPath);
 };

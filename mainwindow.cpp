@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), 
     teltonikaClient->connectToServer("127.0.0.1", 12345);
 
     connect(&DbManager::instance(), &DbManager::commandReceived, this, &MainWindow::onCommandReceived);
+    loadCompanyJsonConfig();
     setupUi();
     
     updater = new Updater(this);
@@ -310,6 +311,12 @@ void MainWindow::generateCanFrame() {
     DbcSignal etaSig = dbcParser->findSignalByKeywords({"ETA_Seconds", "TotalDuration"}, etaFound);
 
     QMap<uint32_t, QByteArray> frames;
+    const auto& allMessages = dbcParser->getMessages();
+    for (auto it = allMessages.constBegin(); it != allMessages.constEnd(); ++it) {
+        int dlc = it.value().dlc;
+        if (dlc == 0) dlc = 8;
+        frames[it.key()] = QByteArray(dlc, 0);
+    }
     struct LogInfo { uint32_t messageId; QString name; double physicalValue; };
     QList<LogInfo> signalsToLog;
 
@@ -405,35 +412,18 @@ void MainWindow::generateCanFrame() {
     // TELTONIKA FMS GATEWAY GONDERIMI (SANIYEDE 1 KERE)
     // ----------------------------------------------------
     if (frameTickCounter == 0) {
-        // DBC yuklu olsun veya olmasin, sunucuya (backend'e) her zaman ayni standart (8-byte) veriyi yollariz.
-        // Bu sayede backend tarafi dinamik DBC formatlariyla ugrasmak zorunda kalmaz, sabit formati cozer.
-        
-        QMap<quint8, QByteArray> ioElements;
+        QMap<quint16, QByteArray> ioElements;
 
-        QByteArray fmsData(8, 0);
-        fmsData[0] = isHandbrakeOn ? 0x01 : 0x00;
-        fmsData[1] = static_cast<unsigned char>(batterySlider->value());
-        uint16_t speed = static_cast<uint16_t>(speedSpinBox->value());
-        fmsData[2] = speed & 0xFF;
-        fmsData[3] = (speed >> 8) & 0xFF;
-        fmsData[4] = isHeadlightsOn ? 0x01 : 0x00;
-        // Kalan 3 byte (5, 6, 7) su an icin 0x00 (Ileride eklenebilir).
-        ioElements[145] = fmsData;
+        for (auto it = frames.begin(); it != frames.end(); ++it) {
+            uint32_t canId = it.key() & 0x1FFFFFFF;
+            if (canToPropertyIdMap.contains(canId)) {
+                ioElements[canToPropertyIdMap[canId]] = it.value();
+            }
+        }
         
-        // Yeni eklenen Kapi, Klima ve Sicaklik verilerini iceren ikinci CAN mesaji (ID: 146)
-        QByteArray extraData(8, 0);
-        extraData[0] = isDoor1Open ? 0x01 : 0x00;
-        extraData[1] = isDoor2Open ? 0x01 : 0x00;
-        extraData[2] = isHvacOn ? 0x01 : 0x00;
-        extraData[3] = static_cast<quint8>(motorTemp);
-        extraData[4] = static_cast<quint8>(inverterTemp);
-        ioElements[146] = extraData;
-
         Codec8Builder builder;
-        QByteArray codec8Packet = builder.buildPacket(ioElements, currentLat, currentLng, currentSpeed);
+        QByteArray codec8Packet = builder.buildExtendedPacket(ioElements, currentLat, currentLng, currentSpeed);
         
-        // Eger guncel bir GPS konumu yoksa (0.0), haritanin 'Null Island'a veya 
-        // default olarak Istanbul'a sicramasini engellemek icin Teltonika'ya packet atmiyoruz.
         if (currentLat != 0.0 && currentLng != 0.0) {
             teltonikaClient->sendData(codec8Packet);
         }
@@ -626,6 +616,27 @@ void MainWindow::updateToggleButton(QPushButton* btn, bool state, const QString&
     } else {
         btn->setText(offText);
         btn->setStyleSheet(QString("background-color: %1; color: white; font-weight: bold;").arg(offColor));
+    }
+}
+
+void MainWindow::loadCompanyJsonConfig() {
+    QFile file("C:/Projeler/can_message_translations.json");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "Cannot open JSON config file.";
+        return;
+    }
+    QByteArray jsonData = file.readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(jsonData);
+    if (doc.isObject()) {
+        QJsonArray items = doc.object().value("items").toArray();
+        for (const QJsonValue& val : items) {
+            QJsonObject obj = val.toObject();
+            quint16 customId = static_cast<quint16>(obj.value("custom_id").toInt());
+            uint32_t canIdDecimal = static_cast<uint32_t>(obj.value("can_id_decimal").toDouble());
+            if (canIdDecimal > 0) {
+                canToPropertyIdMap[canIdDecimal] = customId;
+            }
+        }
     }
 }
 
