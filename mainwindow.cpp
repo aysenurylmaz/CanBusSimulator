@@ -542,11 +542,18 @@ void MainWindow::onCommandReceived(const QString& commandName, const QString& co
     else if (commandName == "door1_toggle" || commandName == "Toggle_Door1") { isDoor1Open = parseBool(commandValue, isDoor1Open); }
     else if (commandName == "door2_toggle" || commandName == "Toggle_Door2") { isDoor2Open = parseBool(commandValue, isDoor2Open); }
     else if (commandName == "hvac_toggle" || commandName == "Toggle_HVAC") { isHvacOn = parseBool(commandValue, isHvacOn); }
-    else if (commandName == "Load_DBC_File") {
-        QString sharedDir = "C:\\Projeler\\CanBusWebPlatform\\Shared\\";
-        QString fullPath = sharedDir + commandValue;
-        dbcParser->parseFile(fullPath);
-    }
+      else if (commandName == "Load_DBC_File") {
+          QString sharedDir = "C:\\Projeler\\CanBusWebPlatform\\Shared\\";
+          QString fullPath = sharedDir + commandValue;
+          dbcParser->parseFile(fullPath);
+      }
+      else if (commandName == "Load_JSON_Map") {
+          QString absolutePath = "C:/Projeler/CanBusWebPlatform/" + commandValue;
+          QSettings settings("config.ini", QSettings::IniFormat);
+          settings.setValue("JsonMapPath", absolutePath);
+          loadCompanyJsonConfig(absolutePath);
+          qDebug() << "JSON Map updated from Web UI:" << absolutePath;
+      }
     else if (commandName == "Set_Route_Data") {
         QJsonDocument doc = QJsonDocument::fromJson(commandValue.toUtf8());
         if (doc.isArray()) {
