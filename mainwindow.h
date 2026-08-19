@@ -37,6 +37,7 @@ private slots:
     void toggleHandbrake();
     void toggleHeadlights();
     void loadDbcFile();
+    void loadJsonFile();
     void onCommandReceived(const QString& commandName, const QString& commandValue);
 
 private:
@@ -51,6 +52,7 @@ private:
     QPushButton *updateBtn;
     QPushButton *headlightsBtn;
     QPushButton *loadDbcBtn;
+    QPushButton *loadJsonBtn;
 
     Updater *updater;
     QTimer *physicsTimer;
@@ -84,7 +86,7 @@ private:
     int frameTickCounter;
     
     void setupUi();
-    void loadCompanyJsonConfig();
+    void loadCompanyJsonConfig(const QString& path);
     void packSignal(QByteArray &frame, const DbcSignal &sig, uint64_t value);
     void exportDbcToJson(const QString& outputPath);
 };

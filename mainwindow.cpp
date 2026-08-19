@@ -43,7 +43,12 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent), isHandbrakeOn(true), 
     teltonikaClient->connectToServer("127.0.0.1", 12345);
 
     connect(&DbManager::instance(), &DbManager::commandReceived, this, &MainWindow::onCommandReceived);
-    loadCompanyJsonConfig();
+    
+    QString jsonPath = settings.value("JsonMapPath", "").toString();
+    if (!jsonPath.isEmpty()) {
+        loadCompanyJsonConfig(jsonPath);
+    }
+    
     setupUi();
     
     updater = new Updater(this);
@@ -147,10 +152,13 @@ void MainWindow::setupUi() {
     mainLayout->addWidget(updateBtn);
     loadDbcBtn = new QPushButton("Load DBC File");
     mainLayout->addWidget(loadDbcBtn);
+    loadJsonBtn = new QPushButton("Load JSON Map");
+    mainLayout->addWidget(loadJsonBtn);
 
     connect(handbrakeBtn, &QPushButton::clicked, this, &MainWindow::toggleHandbrake);
     connect(headlightsBtn, &QPushButton::clicked, this, &MainWindow::toggleHeadlights);
     connect(loadDbcBtn, &QPushButton::clicked, this, &MainWindow::loadDbcFile);
+    connect(loadJsonBtn, &QPushButton::clicked, this, &MainWindow::loadJsonFile);
 }
 
 void MainWindow::toggleHandbrake() {
@@ -619,8 +627,8 @@ void MainWindow::updateToggleButton(QPushButton* btn, bool state, const QString&
     }
 }
 
-void MainWindow::loadCompanyJsonConfig() {
-    QFile file("C:/Projeler/can_message_translations.json");
+void MainWindow::loadCompanyJsonConfig(const QString& path) {
+    QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qDebug() << "Cannot open JSON config file.";
         return;
@@ -637,6 +645,16 @@ void MainWindow::loadCompanyJsonConfig() {
                 canToPropertyIdMap[canIdDecimal] = customId;
             }
         }
+    }
+}
+
+void MainWindow::loadJsonFile() {
+    QString fileName = QFileDialog::getOpenFileName(this, "Open JSON Map File", "", "JSON Files (*.json);;All Files (*)");
+    if (!fileName.isEmpty()) {
+        QSettings settings("config.ini", QSettings::IniFormat);
+        settings.setValue("JsonMapPath", fileName);
+        loadCompanyJsonConfig(fileName);
+        QMessageBox::information(this, "Success", "JSON mapping loaded and saved as default successfully!");
     }
 }
 
